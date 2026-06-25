@@ -1,0 +1,58 @@
+from pydantic import BaseModel, EmailStr, field_validator
+from typing import Optional
+
+
+class UserCreate(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    password: str
+    designation: str
+    years_of_service: Optional[int] = None
+    employment_number: int
+    CNIC: str
+    qualification: Optional[str] = None
+    additional_responsibilities: Optional[str] = None
+    extra_credentials: Optional[str] = None
+    teaching_load: Optional[int] = None
+
+    @field_validator("CNIC")
+    def validate_cnic(cls, value):
+        if not value.isdigit() or len(value) != 13:
+            raise ValueError("CNIC must be exactly 13 digits")
+        return value
+
+    @field_validator("password")
+    def validate_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password must contain at least one number")
+        if not any(not char.isalnum() for char in value):
+            raise ValueError("Password must contain at least one symbol")
+        return value
+
+    @field_validator("first_name")
+    def capitalize_first_name(cls, value):
+        return value.strip().title()
+
+    @field_validator("last_name")
+    def capitalize_last_name(cls, value):
+        return value.strip().title()
+
+
+class UserResponse(BaseModel):
+    user_id: int
+    first_name: str
+    last_name: str
+    email: EmailStr
+    designation: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
