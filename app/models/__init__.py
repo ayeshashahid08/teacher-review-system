@@ -12,3 +12,4 @@ from app.models.salary_increment_eligibility import SalaryIncrementEligibility
 from app.models.monthly_report import MonthlyReport, ReportInsight
 from app.models.acr import ACRReport, ACRResponse, ACRGradeCriteria, ACROverallGradeCriteria
 from app.models.academic_year_settings import AcademicYearSettings
+from app.models.class_yearly_strength import ClassYearlyStrength
