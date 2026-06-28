@@ -7,4 +7,4 @@ class Class(Base):
 
     class_id = Column(Integer, primary_key=True, index=True)
     class_name = Column(String, nullable=False)
-    strength = Column(Integer)
+
