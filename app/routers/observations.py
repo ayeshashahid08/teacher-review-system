@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from app.schemas.observation import ObservationResponse
 
 from app.database import get_db
 from app.schemas.observation import (
@@ -23,7 +24,7 @@ from app.models.user import User
 router = APIRouter(prefix="/observations", tags=["Observations"])
 
 
-@router.post("/start-draft")
+@router.post("/start-draft", response_model=ObservationResponse)
 def create_draft(
     data: ObservationDraftCreate,
     current_user: User = Depends(get_current_user),
@@ -33,7 +34,7 @@ def create_draft(
     return format_observation_response(obser, db)
 
 
-@router.put("/{observation_id}/details")
+@router.put("/{observation_id}/details", response_model=ObservationResponse)
 def update_details(
     observation_id: int,
     data: ObservationDetailsUpdate,
@@ -63,7 +64,7 @@ def update_remarks(
     return {"message": "saved"}
 
 
-@router.get("/{observation_id}/full-state")
+@router.get("/{observation_id}/full-state", response_model=ObservationResponse)
 def get_draft_state(
     observation_id: int,
     db: Session = Depends(get_db)
@@ -71,7 +72,7 @@ def get_draft_state(
     return get_full_observation_state(observation_id, db)
 
 
-@router.post("/{observation_id}/submit")
+@router.post("/{observation_id}/submit", response_model=ObservationResponse)
 def submit(
     observation_id: int,
     db: Session = Depends(get_db)
