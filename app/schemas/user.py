@@ -33,12 +33,23 @@ class UserCreate(BaseModel):
         return value
 
     @field_validator("first_name")
-    def capitalize_first_name(cls, value):
+    def validate_first_name(cls, value):
+        if not value.strip():
+            raise ValueError("First name cannot be empty")
         return value.strip().title()
 
     @field_validator("last_name")
-    def capitalize_last_name(cls, value):
+    def validate_last_name(cls, value):
+        if not value.strip():
+            raise ValueError("Last name cannot be empty")
         return value.strip().title()
+
+    @field_validator("designation")
+    def validate_designation(cls, value):
+        allowed = ["teacher", "coordinator", "principal", "admin"]
+        if value.lower() not in allowed:
+            raise ValueError(f"Designation must be one of: {allowed}")
+        return value.lower()
 
 
 class UserResponse(BaseModel):
