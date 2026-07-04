@@ -1,0 +1,28 @@
+from pydantic import BaseModel,ConfigDict
+from typing import Optional
+
+class QuestionCreate(BaseModel):
+    question_type:str
+    question_text: str
+    created_by: int #userID
+
+class QuestionUpdate(BaseModel):
+    question_type:Optional[str]=None
+    question_text: Optional[str]=None
+    created_by: Optional[int]=None #userID
+
+class QuestionResponse(BaseModel):
+    question_id: int
+    question_type:str
+    question_text: str
+    is_active: bool
+    created_by: int #userID
+
+    model_config = ConfigDict(from_attributes=True)
+
+class QuestionOptionResponse(BaseModel):
+    option_id: int
+    option_grade: str
+    score_value: float
+    model_config=ConfigDict(from_attributes=True)
+
