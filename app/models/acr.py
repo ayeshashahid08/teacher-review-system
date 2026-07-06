@@ -14,6 +14,7 @@ class ACRReport(Base):
     total_marks = Column(Integer)
     percentage = Column(Numeric)
     grade = Column(String)
+    status = Column(String, default="draft")
 
 
 class ACRResponse(Base):
