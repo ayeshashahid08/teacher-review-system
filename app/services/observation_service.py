@@ -10,6 +10,7 @@ from app.models.subject import Subject
 from app.models.class_ import Class
 from app.models.question import QuestionBank
 from app.models.class_yearly_strength import ClassYearlyStrength
+from app.models.teacher_assignment import TeacherAssignment
 
 from app.core.security import decode_access_token
 
@@ -22,6 +23,27 @@ from app.schemas.observation import (
 
 
 def start_observation_draft(data: ObservationDraftCreate, observer_id: int, db: Session) -> Observation:
+    observer = db.query(User).filter(User.user_id == observer_id).first()
+    if observer.designation == "admin":
+        raise HTTPException(status_code=403, detail="Admin cannot take observations")
+    
+    observee = db.query(User).filter(User.user_id == data.observee_id).first()
+    if not observee:
+        raise HTTPException(status_code=404, detail="Observee not found")
+    if observee.designation in ["admin", "principal"]:
+        raise HTTPException(status_code=403, detail="Admin and principal cannot be observed")
+    
+    if observer_id == data.observee_id:
+        raise HTTPException(status_code=400, detail="You cannot observe yourself")
+
+    assignment = db.query(TeacherAssignment).filter(
+        TeacherAssignment.user_id == data.observee_id,
+        TeacherAssignment.subject_id == data.subject_id,
+        TeacherAssignment.class_id == data.class_id
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=400, detail="This teacher is not assigned to this subject and class combination")
+
     new_observation = Observation(
         observer_id=observer_id,
         observee_id=data.observee_id,
@@ -41,6 +63,9 @@ def update_observation_details(observation_id: int, data: ObservationDetailsUpda
     observation = db.query(Observation).filter(Observation.observation_id == observation_id).first()
     if not observation:
         raise HTTPException(status_code=404, detail="Not Found")
+    
+    if observation.status != "draft":
+        raise HTTPException(status_code=400, detail="Only draft observations can be edited")
 
     if data.students_present is not None:
         observation.students_present = data.students_present
@@ -56,6 +81,13 @@ def update_observation_details(observation_id: int, data: ObservationDetailsUpda
 
 
 def save_mcq_response(observation_id: int, data: MCQResponseInput, db: Session) -> ObservationMCQResponse:
+    observation = db.query(Observation).filter(Observation.observation_id == observation_id).first()
+    if not observation:
+        raise HTTPException(status_code=404, detail="Not Found")
+    
+    if observation.status != "draft":
+        raise HTTPException(status_code=400, detail="Only draft observations can be edited")
+    
     response = db.query(ObservationMCQResponse).filter(
         ObservationMCQResponse.observation_id == observation_id,
         ObservationMCQResponse.question_id == data.question_id
@@ -79,6 +111,13 @@ def save_mcq_response(observation_id: int, data: MCQResponseInput, db: Session) 
 
 
 def save_remarks(observation_id: int, data: RemarksInput, db: Session) -> ObservationRemarks:
+    observation = db.query(Observation).filter(Observation.observation_id == observation_id).first()
+    if not observation:
+        raise HTTPException(status_code=404, detail="Not Found")
+    
+    if observation.status != "draft":
+        raise HTTPException(status_code=400, detail="Only draft observations can be edited")
+    
     remarks = db.query(ObservationRemarks).filter(
         ObservationRemarks.observation_id == observation_id
     ).first()

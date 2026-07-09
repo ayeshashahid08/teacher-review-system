@@ -64,7 +64,7 @@ def update_remarks(
     return {"message": "saved"}
 
 
-@router.get("/{observation_id}/full-state", response_model=ObservationResponse)
+@router.get("/{observation_id}/full-state")
 def get_draft_state(
     observation_id: int,
     db: Session = Depends(get_db)

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UniqueConstraint, TIMESTAMP
 from app.database import Base
 
 
@@ -15,6 +15,7 @@ class ACRReport(Base):
     percentage = Column(Numeric)
     grade = Column(String)
     status = Column(String, default="draft")
+    submitted_at= Column(TIMESTAMP, nullable= True)
 
 
 class ACRResponse(Base):
@@ -23,6 +24,7 @@ class ACRResponse(Base):
     acr_id = Column(Integer, ForeignKey("acr_report.acr_id"), primary_key=True)
     acr_question_id = Column(Integer, ForeignKey("question_bank.question_id"), primary_key=True)
     acr_response_marks = Column(Integer, nullable=False)
+    # response_grade = Column(String, nullable = True)
 
 
 class ACRGradeCriteria(Base):

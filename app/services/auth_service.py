@@ -26,7 +26,7 @@ def register_user(user_data: UserCreate, db: Session) -> User:
         qualification=user_data.qualification,
         additional_responsibilities=user_data.additional_responsibilities,
         extra_credentials=user_data.extra_credentials,
-        teaching_load=user_data.teaching_load,
+        # teaching_load=user_data.teaching_load,
     )
 
     db.add(new_user)

@@ -14,7 +14,7 @@ class UserCreate(BaseModel):
     qualification: Optional[str] = None
     additional_responsibilities: Optional[str] = None
     extra_credentials: Optional[str] = None
-    teaching_load: Optional[int] = None
+    # teaching_load: Optional[int] = None
 
     @field_validator("CNIC")
     def validate_cnic(cls, value):
@@ -46,7 +46,7 @@ class UserCreate(BaseModel):
 
     @field_validator("designation")
     def validate_designation(cls, value):
-        allowed = ["teacher", "coordinator", "principal", "admin"]
+        allowed = ["teacher", "chief coordinator", "peer coordinator", "principal", "admin"]
         if value.lower() not in allowed:
             raise ValueError(f"Designation must be one of: {allowed}")
         return value.lower()
