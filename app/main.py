@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, observations, approvals, teacher_assignments
+from app.routers import auth, observations, approvals, teacher_assignments, monthly_report_router
+
+
 
 app = FastAPI(title="Teacher Review System")
 
@@ -15,6 +17,7 @@ app.include_router(auth.router)
 app.include_router(observations.router)
 app.include_router(approvals.router)
 app.include_router(teacher_assignments.router)
+app.include_router(monthly_report_router.router)
 
 
 @app.get("/")

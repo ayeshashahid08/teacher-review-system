@@ -16,6 +16,13 @@ class MonthlyReport(Base):
     human_suggestions = Column(Text)
     generated_at = Column(TIMESTAMP)
 
+    # --- new columns ---
+    status = Column(String, nullable=False, default="draft")
+    # draft -> pending_approval -> approved  (principal can edit while draft/pending_approval)
+    approved_by = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    approved_at = Column(TIMESTAMP, nullable=True)
+    pdf_path = Column(String, nullable=True)
+
 
 class ReportInsight(Base):
     __tablename__ = "report_insights"
