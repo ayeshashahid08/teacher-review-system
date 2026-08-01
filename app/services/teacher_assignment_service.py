@@ -10,7 +10,7 @@ from app.schemas.teacher_assignment import TeacherAssignmentCreate
 
 
 def create_assignment(data: TeacherAssignmentCreate, assignment_creater: User, db: Session):
-    if assignment_creater.designation != "admin":
+    if assignment_creater.designation != "admin" :
         raise HTTPException(status_code=403, detail="Only admin can assign teachers")
 
     existing = db.query(TeacherAssignment).filter(
@@ -76,3 +76,4 @@ def recalculate_teaching_load(user_id: int, db: Session):
     user = db.query(User).filter(User.user_id == user_id).first()
     user.teaching_load = total
     db.commit()
+

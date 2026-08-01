@@ -63,6 +63,27 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+    @field_validator("new_password")
+    def validate_new_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password must contain at least one number")
+        if not any(not char.isalnum() for char in value):
+            raise ValueError("Password must contain at least one symbol")
+        return value
+    
+
+    @field_validator("confirm_password")
+    def passwords_match(cls, value, values):
+        if "new_password" in values.data and value != values.data["new_password"]:
+            raise ValueError("Passwords do not match")
+        return value
 
 class UserLogin(BaseModel):
     email: EmailStr

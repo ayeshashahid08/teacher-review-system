@@ -87,6 +87,15 @@ def save_mcq_response(observation_id: int, data: MCQResponseInput, db: Session) 
     
     if observation.status != "draft":
         raise HTTPException(status_code=400, detail="Only draft observations can be edited")
+
+    question = db.query(QuestionBank).filter(
+        QuestionBank.question_id == data.question_id,
+        QuestionBank.question_type == "observation",
+        QuestionBank.is_active == True
+    ).first()
+    if not question:
+        raise HTTPException(status_code=400, detail="Invalid question for observation form")
+    
     
     response = db.query(ObservationMCQResponse).filter(
         ObservationMCQResponse.observation_id == observation_id,
