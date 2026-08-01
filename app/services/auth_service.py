@@ -26,9 +26,7 @@ def register_user(user_data: UserCreate, db: Session) -> User:
         qualification=user_data.qualification,
         additional_responsibilities=user_data.additional_responsibilities,
         extra_credentials=user_data.extra_credentials,
-        # teaching_load=user_data.teaching_load,
     )
-
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -39,6 +37,8 @@ def authenticate_user(email: str, password: str, db: Session) -> User:
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Your account has been deactivated. Contact admin.")
     return user
 
 

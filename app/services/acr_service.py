@@ -24,16 +24,34 @@ def get_current_academic_year() -> str:
 def start_acr(data: AcrCreate, reporter_id: int, db: Session):
     academic_year = get_current_academic_year()
 
+    reporter = db.query(User).filter(User.user_id == reporter_id).first()
+    reported = db.query(User).filter(User.user_id == data.reported_id).first()
+
+    if not reported:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    # nobody fills their own ACR
+    if reporter_id == data.reported_id:
+        raise HTTPException(status_code=400, detail="You cannot fill your own ACR report")
+
+    # principal's ACR cannot be made by anyone
+    if reported.designation == "principal" or reported.designation == "admin" :
+        raise HTTPException(status_code=403, detail="Principal and admin does not have an ACR report")
+
+    # chief coordinator's ACR can only be filled by principal
+    if reported.designation == "chief_coordinator" and reporter.designation != "principal":
+        raise HTTPException(status_code=403, detail="Only principal can fill chief coordinator's ACR")
+
+    # regular teachers' ACR can only be filled by chief coordinator
+    if reported.designation in ["teacher", "coordinator", "peer_coordinator"] and reporter.designation != "chief_coordinator":
+        raise HTTPException(status_code=403, detail="Only chief coordinator can fill teacher ACR reports")
+
     existing = db.query(ACRReport).filter(
         ACRReport.reported_id == data.reported_id,
         ACRReport.academic_year == academic_year
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="ACR already exists for this teacher this year")
-
-    reporter = db.query(User).filter(User.user_id == reporter_id).first()
-    if reporter.designation != "chief coordinator":
-        raise HTTPException(status_code=403, detail="Only chief coordinators can create ACR reports")
 
     new_acr = ACRReport(
         academic_year=academic_year,
@@ -55,7 +73,14 @@ def save_acr_response(acr_id: int, reporter_id: int, data: AcrResponseInput, db:
     if acr.reporter_id != reporter_id:
         raise HTTPException(status_code=403, detail="You can only modify your own ACR reports")
 
-
+    question = db.query(QuestionBank).filter(
+        QuestionBank.question_id == data.acr_question_id,
+        QuestionBank.question_type == "acr",
+        QuestionBank.is_active == True
+    ).first()
+    if not question:
+        raise HTTPException(status_code=400, detail="Invalid question for ACR form")
+    
     max_marks_row = db.query(ACRGradeCriteria).filter(ACRGradeCriteria.acr_question_id == data.acr_question_id, ACRGradeCriteria.grade == "A+").first()
     if max_marks_row and data.acr_response_marks > max_marks_row.max_marks:
         raise HTTPException(
