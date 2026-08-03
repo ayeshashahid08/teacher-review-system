@@ -1,5 +1,6 @@
-from pydantic import BaseModel,ConfigDict
-from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, List, Dict
 
 class QuestionCreate(BaseModel):
     question_type:str
@@ -25,4 +26,10 @@ class QuestionOptionResponse(BaseModel):
     option_grade: str
     score_value: float
     model_config=ConfigDict(from_attributes=True)
+
+
+class GroupedQuestionsResponse(BaseModel):
+    options: List[QuestionOptionResponse]                          # the 4 shared A+/A/B/C options
+    sections: Dict[str, Dict[str, List[QuestionResponse]]]         # section -> subsection -> questions
+
 

@@ -72,7 +72,7 @@ def generate_monthly_report(data: MonthlyReportGenerate, db: Session) -> Monthly
         ObservationRemarks.observation_id.in_(observation_ids)
     ).all()
     remarks_summary = "\n".join(
-        f"- {r.general_observation or ''} {r.remarks_suggestions or ''}".strip()
+        f"- Strengths: {r.strengths or ''} | Improvement: {r.areas_of_improvement or ''} | Suggestions: {r.suggestions_recommendations or ''}".strip()
         for r in remarks_rows
     ) or "No written remarks recorded this month."
 
@@ -180,8 +180,7 @@ def get_report_with_percentages(report_id: int, db: Session) -> dict:
     for question_id, values in per_question_scores.items():
         question = db.query(QuestionBank).filter(QuestionBank.question_id == question_id).first()
         avg_value = sum(values) / len(values)
-        max_possible = max(values) if values else 1
-        percentage = (avg_value / max_possible) * 100 if max_possible else 0
+        percentage = (avg_value / 1) * 100  # every MCQ now has a fixed max of 1 point, so no guessing needed
         mcq_percentages.append({
             "question_id": question_id,
             "question_text": question.question_text if question else "Unknown",
