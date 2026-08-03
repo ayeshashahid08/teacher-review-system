@@ -22,3 +22,5 @@ class User(Base):
     extra_credentials = Column(Text)
     teaching_load = Column(Integer)
     added_by = Column(Integer, ForeignKey("users.user_id"))
+    must_change_password = Column(Boolean, default=True)
+    

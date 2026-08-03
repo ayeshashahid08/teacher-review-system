@@ -5,6 +5,7 @@ class TeacherAssignmentCreate(BaseModel):
     user_id: int
     subject_id: int
     class_id: int
+    classes_per_week: int = 1
 
 
 class TeacherAssignmentResponse(BaseModel):

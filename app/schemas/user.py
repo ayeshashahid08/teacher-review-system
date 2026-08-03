@@ -14,7 +14,7 @@ class UserCreate(BaseModel):
     qualification: Optional[str] = None
     additional_responsibilities: Optional[str] = None
     extra_credentials: Optional[str] = None
-    teaching_load: Optional[int] = None
+    # teaching_load: Optional[int] = None
 
     @field_validator("CNIC")
     def validate_cnic(cls, value):
@@ -46,7 +46,7 @@ class UserCreate(BaseModel):
 
     @field_validator("designation")
     def validate_designation(cls, value):
-        allowed = ["teacher", "coordinator", "principal", "admin"]
+        allowed = ["teacher", "chief coordinator", "peer coordinator", "principal", "admin"]
         if value.lower() not in allowed:
             raise ValueError(f"Designation must be one of: {allowed}")
         return value.lower()
@@ -63,7 +63,42 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+    @field_validator("new_password")
+    def validate_new_password(cls, value):
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password must contain at least one number")
+        if not any(not char.isalnum() for char in value):
+            raise ValueError("Password must contain at least one symbol")
+        return value
+    
+
+    @field_validator("confirm_password")
+    def passwords_match(cls, value, values):
+        if "new_password" in values.data and value != values.data["new_password"]:
+            raise ValueError("Passwords do not match")
+        return value
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class PasswordResetRequestCreate(BaseModel):
+    email: EmailStr
+    reason: Optional[str] = None
+
+class PasswordResetRequestResponse(BaseModel):
+    request_id: int
+    email: str
+    reason: Optional[str] = None
+    is_resolved: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

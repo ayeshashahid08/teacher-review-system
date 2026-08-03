@@ -43,6 +43,9 @@ def approve_observation(data: ApprovalAction, observation_id: int, approver: Use
             status_code=400,
             detail=f"Observation is not at the correct stage for your role. Current status: {obs.status}"
         )
+    
+    if (role != "principal") and (data.action == "rejected" or data.action=="revision_requested"):
+        raise HTTPException(status_code=403, detail="Your role cannot perform rejections or request a revision")
 
     new_approval = ObservationApproval(
         approver_id=approver.user_id,

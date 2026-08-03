@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy import func
 
 from app.models.teacher_assignment import TeacherAssignment
 from app.models.user import User
@@ -9,7 +10,7 @@ from app.schemas.teacher_assignment import TeacherAssignmentCreate
 
 
 def create_assignment(data: TeacherAssignmentCreate, assignment_creater: User, db: Session):
-    if assignment_creater.designation != "admin":
+    if assignment_creater.designation != "admin" :
         raise HTTPException(status_code=403, detail="Only admin can assign teachers")
 
     existing = db.query(TeacherAssignment).filter(
@@ -23,11 +24,13 @@ def create_assignment(data: TeacherAssignmentCreate, assignment_creater: User, d
     new_assignment = TeacherAssignment(
         user_id=data.user_id,
         subject_id=data.subject_id,
-        class_id=data.class_id
+        class_id=data.class_id,
+        classes_per_week= data.classes_per_week
     )
     db.add(new_assignment)
     db.commit()
     db.refresh(new_assignment)
+    recalculate_teaching_load(data.user_id, db)
     return new_assignment
 
 
@@ -44,8 +47,10 @@ def delete_assignment(assignment_id: int, db: Session):
     ).first()
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
+
     db.delete(assignment)
     db.commit()
+    recalculate_teaching_load(assignment.user_id, db)
     return {"message": "Assignment deleted"}
 
 
@@ -60,3 +65,15 @@ def format_assignment_response(assignment: TeacherAssignment, db: Session) -> di
         "subject_name": subject.subject_name,
         "class_name": class_.class_name,
     }
+
+
+
+def recalculate_teaching_load(user_id: int, db: Session):
+    total = db.query(func.sum(TeacherAssignment.classes_per_week)).filter(
+        TeacherAssignment.user_id == user_id
+    ).scalar() or 0
+    
+    user = db.query(User).filter(User.user_id == user_id).first()
+    user.teaching_load = total
+    db.commit()
+
