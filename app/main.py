@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, observations, approvals, teacher_assignments, acr, users
+from app.routers import auth, observations, approvals, teacher_assignments, acr, users, lists
 
 app = FastAPI(title="Teacher Review System")
 
@@ -17,6 +17,7 @@ app.include_router(approvals.router)
 app.include_router(teacher_assignments.router)
 app.include_router(acr.router)
 app.include_router(users.router)
+app.include_router(lists.router)
 
 @app.get("/")
 def root():

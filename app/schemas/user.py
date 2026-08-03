@@ -88,3 +88,17 @@ class PasswordChange(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class PasswordResetRequestCreate(BaseModel):
+    email: EmailStr
+    reason: Optional[str] = None
+
+class PasswordResetRequestResponse(BaseModel):
+    request_id: int
+    email: str
+    reason: Optional[str] = None
+    is_resolved: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
