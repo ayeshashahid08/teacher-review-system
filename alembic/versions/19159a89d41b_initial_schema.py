@@ -1,8 +1,8 @@
-"""Create initial tables
+"""initial schema
 
-Revision ID: b565f79a16e2
+Revision ID: 19159a89d41b
 Revises: 
-Create Date: 2026-07-03 05:53:27.165190
+Create Date: 2026-08-06 16:40:43.806003
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'b565f79a16e2'
+revision: str = '19159a89d41b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -40,6 +40,15 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('class_id')
     )
     op.create_index(op.f('ix_class_class_id'), 'class', ['class_id'], unique=False)
+    op.create_table('password_reset_requests',
+    sa.Column('request_id', sa.Integer(), nullable=False),
+    sa.Column('email', sa.String(), nullable=False),
+    sa.Column('reason', sa.String(), nullable=True),
+    sa.Column('is_resolved', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
+    sa.PrimaryKeyConstraint('request_id')
+    )
+    op.create_index(op.f('ix_password_reset_requests_request_id'), 'password_reset_requests', ['request_id'], unique=False)
     op.create_table('question_options',
     sa.Column('option_id', sa.Integer(), nullable=False),
     sa.Column('option_grade', sa.String(), nullable=False),
@@ -70,6 +79,7 @@ def upgrade() -> None:
     sa.Column('extra_credentials', sa.Text(), nullable=True),
     sa.Column('teaching_load', sa.Integer(), nullable=True),
     sa.Column('added_by', sa.Integer(), nullable=True),
+    sa.Column('must_change_password', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['added_by'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('user_id'),
     sa.UniqueConstraint('CNIC'),
@@ -86,6 +96,8 @@ def upgrade() -> None:
     sa.Column('total_marks', sa.Integer(), nullable=True),
     sa.Column('percentage', sa.Numeric(), nullable=True),
     sa.Column('grade', sa.String(), nullable=True),
+    sa.Column('status', sa.String(), nullable=True),
+    sa.Column('submitted_at', sa.TIMESTAMP(), nullable=True),
     sa.ForeignKeyConstraint(['academic_year'], ['academic_year_settings.academic_year'], ),
     sa.ForeignKeyConstraint(['reported_id'], ['users.user_id'], ),
     sa.ForeignKeyConstraint(['reporter_id'], ['users.user_id'], ),
@@ -111,6 +123,11 @@ def upgrade() -> None:
     sa.Column('ai_suggestions', sa.Text(), nullable=True),
     sa.Column('human_suggestions', sa.Text(), nullable=True),
     sa.Column('generated_at', sa.TIMESTAMP(), nullable=True),
+    sa.Column('status', sa.String(), nullable=False),
+    sa.Column('approved_by', sa.Integer(), nullable=True),
+    sa.Column('approved_at', sa.TIMESTAMP(), nullable=True),
+    sa.Column('pdf_path', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['approved_by'], ['users.user_id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('report_id'),
     sa.UniqueConstraint('user_id', 'month', 'year', name='uq_user_month_year')
@@ -139,6 +156,9 @@ def upgrade() -> None:
     sa.Column('question_id', sa.Integer(), nullable=False),
     sa.Column('question_type', sa.String(), nullable=False),
     sa.Column('question_text', sa.String(), nullable=False),
+    sa.Column('section', sa.String(), nullable=True),
+    sa.Column('subsection', sa.String(), nullable=True),
+    sa.Column('max_points', sa.Numeric(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('created_by', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['created_by'], ['users.user_id'], ),
@@ -161,6 +181,7 @@ def upgrade() -> None:
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('subject_id', sa.Integer(), nullable=False),
     sa.Column('class_id', sa.Integer(), nullable=False),
+    sa.Column('classes_per_week', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['class_id'], ['class.class_id'], ),
     sa.ForeignKeyConstraint(['subject_id'], ['subjects.subject_id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
@@ -231,7 +252,10 @@ def upgrade() -> None:
     sa.Column('mcq_score', sa.Numeric(), nullable=True),
     sa.Column('ai_score', sa.Numeric(), nullable=True),
     sa.Column('written_score', sa.Numeric(), nullable=True),
+    sa.Column('max_possible_score', sa.Numeric(), nullable=True),
     sa.Column('total_score', sa.Numeric(), nullable=True),
+    sa.Column('percentage', sa.Numeric(), nullable=True),
+    sa.Column('grade', sa.String(), nullable=True),
     sa.Column('is_overridden', sa.Boolean(), nullable=True),
     sa.Column('override_reason', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['observation_id'], ['observations.observation_id'], ),
@@ -271,6 +295,8 @@ def downgrade() -> None:
     op.drop_table('subjects')
     op.drop_index(op.f('ix_question_options_option_id'), table_name='question_options')
     op.drop_table('question_options')
+    op.drop_index(op.f('ix_password_reset_requests_request_id'), table_name='password_reset_requests')
+    op.drop_table('password_reset_requests')
     op.drop_index(op.f('ix_class_class_id'), table_name='class')
     op.drop_table('class')
     op.drop_index(op.f('ix_acr_overall_grade_criteria_criteria_id'), table_name='acr_overall_grade_criteria')

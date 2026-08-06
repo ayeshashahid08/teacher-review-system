@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.schemas.observation import ObservationResponse
 from app.schemas.score import ScoreOverrideInput, ScoreDetailResponse
-from app.services.observation_service import override_observation_score
+# from app.services.observation_service import override_observation_score
 from app.services.auth_service import require_role
 
 from app.database import get_db

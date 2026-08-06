@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth, observations, approvals, teacher_assignments, monthly_report_router, acr, users, lists
-
+from app.scripts.seed import seed as seed_data
 
 app = FastAPI(title="Teacher Review System")
 
@@ -25,3 +25,7 @@ app.include_router(lists.router)
 @app.get("/")
 def root():
     return {"message": "Teacher Review System API is running"}
+
+@app.on_event("startup")
+def startup_event():
+    seed_data()

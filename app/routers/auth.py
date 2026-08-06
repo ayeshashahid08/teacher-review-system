@@ -8,7 +8,7 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.models.user import User
 from app.schemas.user import PasswordChange
 from app.models.password_reset_request import PasswordResetRequest
-from app.schemas.user import PasswordResetRequestCreate
+from app.schemas.user import PasswordResetRequestCreate, PasswordResetRequestResponse
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
