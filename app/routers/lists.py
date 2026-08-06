@@ -7,7 +7,7 @@ from app.models.user import User
 from app.models.subject import Subject
 from app.models.class_ import Class
 from app.models.question import QuestionBank
-
+from app.schemas.user import UserPublicResponse, UserFullResponse
 router = APIRouter(tags=["Lists"])
 
 
@@ -27,14 +27,18 @@ def get_classes(
     return db.query(Class).all()
 
 
+
 @router.get("/users")
 def get_all_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.designation not in ["admin", "principal"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    return db.query(User).filter(User.is_active == True).all()
+    users = db.query(User).filter(User.is_active == True).all()
+
+    if current_user.designation in ["admin", "principal"]:
+        return [UserFullResponse.model_validate(u) for u in users]
+    else:
+        return [UserPublicResponse.model_validate(u) for u in users]
 
 
 @router.get("/users/teachers")

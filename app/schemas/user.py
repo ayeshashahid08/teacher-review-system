@@ -52,13 +52,31 @@ class UserCreate(BaseModel):
         return value.lower()
 
 
-class UserResponse(BaseModel):
+class UserPublicResponse(BaseModel):
+    user_id: int
+    first_name: str
+    last_name: str
+    email: EmailStr
+    designation: str
+
+    class Config:
+        from_attributes = True
+
+
+class UserFullResponse(BaseModel):
     user_id: int
     first_name: str
     last_name: str
     email: EmailStr
     designation: str
     is_active: bool
+    employment_number: int
+    CNIC: str
+    qualification: Optional[str] = None
+    teaching_load: Optional[int] = None
+    years_of_service: Optional[int] = None
+    joined_at: Optional[datetime] = None
+    must_change_password: bool
 
     class Config:
         from_attributes = True

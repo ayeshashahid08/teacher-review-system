@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserFullResponse
 from app.services.auth_service import register_user, get_current_user
 from app.models.user import User
 
 router = APIRouter(prefix="/users", tags=["User Management"])
 
 
-@router.post("/add", response_model=UserResponse)
+@router.post("/add", response_model=UserFullResponse)
 def add_user(
     user_data: UserCreate,
     current_user: User = Depends(get_current_user),
@@ -48,13 +48,13 @@ def remove_user(
     return {"message": f"User {user.email} deactivated successfully"}
 
 
-@router.get("/", response_model=list[UserResponse])
-def list_users(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    if current_user.designation != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can view all users")
+# @router.get("/", response_model=list[UserResponse])
+# def list_users(
+#     current_user: User = Depends(get_current_user),
+#     db: Session = Depends(get_db)
+# ):
+#     if current_user.designation != "admin":
+#         raise HTTPException(status_code=403, detail="Only admin can view all users")
     
-    users = db.query(User).filter(User.is_active == True).all()
-    return users
+#     users = db.query(User).filter(User.is_active == True).all()
+#     return users
