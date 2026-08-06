@@ -50,7 +50,51 @@ class UserCreate(BaseModel):
         if value.lower() not in allowed:
             raise ValueError(f"Designation must be one of: {allowed}")
         return value.lower()
+        
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    designation: Optional[str] = None
+    years_of_service: Optional[int] = None
+    employment_number: Optional[str] = None
+    CNIC: Optional[str] = None
+    qualification: Optional[str] = None
+    additional_responsibilities: Optional[str] = None
+    extra_credentials: Optional[str] = None
 
+    @field_validator("CNIC")
+    def validate_cnic(cls, value):
+        if value is None:
+            return value
+        if not value.isdigit() or len(value) != 13:
+            raise ValueError("CNIC must be exactly 13 digits")
+        return value
+
+    @field_validator("first_name")
+    def validate_first_name(cls, value):
+        if value is None:
+            return value
+        if not value.strip():
+            raise ValueError("First name cannot be empty")
+        return value.strip().title()
+
+    @field_validator("last_name")
+    def validate_last_name(cls, value):
+        if value is None:
+            return value
+        if not value.strip():
+            raise ValueError("Last name cannot be empty")
+        return value.strip().title()
+
+    @field_validator("designation")
+    def validate_designation(cls, value):
+        if value is None:
+            return value
+        allowed = ["teacher", "chief coordinator", "peer coordinator", "principal", "admin"]
+        if value.lower() not in allowed:
+            raise ValueError(f"Designation must be one of: {allowed}")
+        return value.lower()
 
 class UserPublicResponse(BaseModel):
     user_id: int

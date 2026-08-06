@@ -79,6 +79,9 @@ def forgot_password(
     user = db.query(User).filter(User.email == data.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="No account found with this email")
+    existing = db.query(PasswordResetRequest).filter(PasswordResetRequest.email == data.email, PasswordResetRequest.is_resolved == False).first()
+    if existing:
+    raise HTTPException(status_code=400, detail="A reset request already exists for this email. Please contact your admin directly.")
     
     new_request = PasswordResetRequest(
         email=data.email,
