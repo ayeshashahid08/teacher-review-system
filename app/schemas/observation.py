@@ -28,8 +28,9 @@ class MCQResponseInput(BaseModel):
 
 
 class RemarksInput(BaseModel):
-    general_observation: Optional[str] = None
-    remarks_suggestions: Optional[str] = None
+    strengths: Optional[str] = None
+    areas_of_improvement: Optional[str] = None
+    suggestions_recommendations: Optional[str] = None
 
 
 class ObservationResponse(BaseModel):

@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.schemas.observation import ObservationResponse
+from app.schemas.score import ScoreOverrideInput, ScoreDetailResponse
+from app.services.observation_service import override_observation_score
+from app.services.auth_service import require_role
 
 from app.database import get_db
 from app.schemas.observation import (
@@ -79,3 +82,12 @@ def submit(
 ):
     submitted_obser = submit_observation(observation_id, db)
     return format_observation_response(submitted_obser, db)
+
+@router.put("/{observation_id}/override-score", response_model=ScoreDetailResponse)
+def override_score(
+    observation_id: int,
+    data: ScoreOverrideInput,
+    principal: User = Depends(require_role(["principal"])),
+    db: Session = Depends(get_db)
+):
+    return override_observation_score(observation_id, data, principal, db)
