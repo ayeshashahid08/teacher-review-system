@@ -14,7 +14,7 @@ stage_map = {
         "stage_name": "principal",
         "next_status_approved": "pending_chief_coordinator",
     },
-    "coordinator": {
+    "chief_coordinator": {
         "expected_status": "pending_chief_coordinator",
         "stage_name": "chief_coordinator",
         "next_status_approved": "pending_peer_coordinator",

@@ -6,7 +6,9 @@ from app.models.class_yearly_strength import ClassYearlyStrength
 from app.models.academic_year_settings import AcademicYearSettings
 from app.models.question import QuestionBank, QuestionOption
 from app.models.acr import ACROverallGradeCriteria, ACRGradeCriteria
+from app.models.teacher_assignment import TeacherAssignment
 from app.core.security import hash_password
+from sqlalchemy import func
 
 ACADEMIC_YEAR = "2025-2026"
 
@@ -134,6 +136,14 @@ ACR_OVERALL_GRADES = [
     (0, 59.99, "D"),
 ]
 
+TEACHER_ASSIGNMENTS = [
+    {"email": "teacher1@school.com", "subject_name": "Mathematics", "class_name": "Grade 5A", "classes_per_week": 5},
+    {"email": "teacher1@school.com", "subject_name": "Mathematics", "class_name": "Grade 6B", "classes_per_week": 3},
+    {"email": "teacher2@school.com", "subject_name": "English", "class_name": "Grade 5A", "classes_per_week": 4},
+    {"email": "teacher2@school.com", "subject_name": "Science", "class_name": "Grade 7C", "classes_per_week": 3},
+    {"email": "chiefcoord@school.com", "subject_name": "Urdu", "class_name": "Grade 6B", "classes_per_week": 2},
+    {"email": "peercoord@school.com", "subject_name": "Science", "class_name": "Grade 5A", "classes_per_week": 3},
+]
 
 def seed():
     db = SessionLocal()
@@ -259,6 +269,49 @@ def seed():
                     grade=grade
                 ))
         db.commit()
+
+        print("Seeding teacher assignments...")
+        
+
+        for assignment in TEACHER_ASSIGNMENTS:
+            user = db.query(User).filter(User.email == assignment["email"]).first()
+            subject = db.query(Subject).filter(Subject.subject_name == assignment["subject_name"]).first()
+            class_ = db.query(Class).filter(Class.class_name == assignment["class_name"]).first()
+
+            if not user or not subject or not class_:
+                print(f"Skipping assignment - missing user/subject/class for {assignment}")
+                continue
+
+            existing = db.query(TeacherAssignment).filter(
+                TeacherAssignment.user_id == user.user_id,
+                TeacherAssignment.subject_id == subject.subject_id,
+                TeacherAssignment.class_id == class_.class_id
+            ).first()
+
+            if not existing:
+                db.add(TeacherAssignment(
+                    user_id=user.user_id,
+                    subject_id=subject.subject_id,
+                    class_id=class_.class_id,
+                    classes_per_week=assignment["classes_per_week"]
+                ))
+
+        db.commit()
+
+        # recalculate teaching load for all assigned teachers
+        print("Calculating teaching loads...")
+        teachers = db.query(User).filter(
+            User.designation.in_(["teacher", "coordinator", "peer_coordinator", "chief_coordinator"])
+        ).all()
+
+        for teacher in teachers:
+            total = db.query(func.sum(TeacherAssignment.classes_per_week)).filter(
+                TeacherAssignment.user_id == teacher.user_id
+            ).scalar() or 0
+            teacher.teaching_load = total
+
+        db.commit()
+        print("Teaching loads updated.")
 
         print("All data seeded successfully.")
         print("Admin login: admin@school.com / Admin123!")
