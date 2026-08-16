@@ -1,7 +1,14 @@
 from sqlalchemy.orm import Session
 from collections import defaultdict
+from fastapi import HTTPException
+
 
 from app.models.question import QuestionBank, QuestionOption
+from app.models.user import User
+from app.schemas.question import (
+    QuestionCreate,
+    QuestionUpdate,
+)
 
 
 def get_questions_grouped(question_type: str, db: Session) -> dict:
@@ -27,3 +34,118 @@ def get_questions_grouped(question_type: str, db: Session) -> dict:
         "options": options,
         "sections": sections_plain,
     }
+
+
+def create_question(
+    data: QuestionCreate,
+    current_user: User,
+    db: Session
+) -> QuestionBank:
+
+    question = QuestionBank(
+        question_text=data.question_text,
+        question_type=data.question_type,
+        section=data.section,
+        subsection=data.subsection,
+        is_active=True,
+        created_by=current_user.user_id
+    )
+
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+
+    return question
+
+
+def get_question(
+    question_id: int,
+    db: Session
+) -> QuestionBank:
+
+    question = db.query(QuestionBank).filter(
+        QuestionBank.question_id == question_id,
+        QuestionBank.is_active == True
+    ).first()
+
+    if not question:
+        raise HTTPException(
+            status_code=404,
+            detail="Question not found"
+        )
+
+    return question
+
+
+def update_question(
+    question_id: int,
+    data: QuestionUpdate,
+    db: Session
+) -> QuestionBank:
+
+    question = db.query(QuestionBank).filter(
+        QuestionBank.question_id == question_id,
+        QuestionBank.is_active == True
+    ).first()
+
+    if not question:
+        raise HTTPException(
+            status_code=404,
+            detail="Question not found"
+        )
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(question, field, value)
+
+    db.commit()
+    db.refresh(question)
+
+    return question
+
+
+def delete_question(
+    question_id: int,
+    db: Session
+) -> None:
+
+    question = db.query(QuestionBank).filter(
+        QuestionBank.question_id == question_id,
+        QuestionBank.is_active == True
+    ).first()
+
+    if not question:
+        raise HTTPException(
+            status_code=404,
+            detail="Question not found"
+        )
+
+    # Soft delete
+    question.is_active = False
+
+    db.commit()
+
+
+def restore_question(
+    question_id: int,
+    db: Session
+) -> QuestionBank:
+
+    question = db.query(QuestionBank).filter(
+        QuestionBank.question_id == question_id,
+        QuestionBank.is_active == False
+    ).first()
+
+    if not question:
+        raise HTTPException(
+            status_code=404,
+            detail="Inactive question not found"
+        )
+
+    question.is_active = True
+
+    db.commit()
+    db.refresh(question)
+
+    return question
