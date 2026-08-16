@@ -2,14 +2,27 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict
 
-class QuestionCreate(BaseModel):
-    question_type:str
+
+# class QuestionCreate(BaseModel):
+#     question_type:str
+#     question_text: str
+#     created_by: int #userID
+
+class QuestionBase(BaseModel):
     question_text: str
-    created_by: int #userID
+    question_type: str
+    section: str
+    subsection: str
+
+
+class QuestionCreate(QuestionBase):
+    pass
 
 class QuestionUpdate(BaseModel):
     question_type:Optional[str]=None
     question_text: Optional[str]=None
+    section: Optional[str] = None
+    subsection: Optional[str] = None
     created_by: Optional[int]=None #userID
 
 class QuestionResponse(BaseModel):
@@ -17,6 +30,8 @@ class QuestionResponse(BaseModel):
     question_type:str
     question_text: str
     is_active: bool
+    section: Optional[str] = None
+    subsection: Optional[str] = None
     created_by: int #userID
 
     model_config = ConfigDict(from_attributes=True)
