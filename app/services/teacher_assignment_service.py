@@ -10,8 +10,23 @@ from app.schemas.teacher_assignment import TeacherAssignmentCreate
 
 
 def create_assignment(data: TeacherAssignmentCreate, assignment_creater: User, db: Session):
-    if assignment_creater.designation != "admin" :
-        raise HTTPException(status_code=403, detail="Only admin can assign teachers")
+    if assignment_creater.designation not in [ "admin", "principal"]  :
+        raise HTTPException(status_code=403, detail="Only admin or principal can assign teachers")
+
+    user_to_assign = db.query(User).filter(User.user_id == data.user_id).first()
+    if not user_to_assign:
+        raise HTTPException(status_code=404, detail="User not found")
+    subject = db.query(Subject).filter(Subject.subject_id == data.subject_id).first()
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+
+    class_ = db.query(Class).filter(Class.class_id == data.class_id).first()
+    if not class_:
+        raise HTTPException(status_code=404, detail="Class not found")
+    
+    if user_to_assign.designation in ["admin", "principal"]:
+        raise HTTPException(status_code=400, detail="Admin and principal cannot be assigned to classes")
+
 
     existing = db.query(TeacherAssignment).filter(
         TeacherAssignment.user_id == data.user_id,
@@ -41,12 +56,15 @@ def get_assignments_for_user(user_id: int, db: Session):
     return assignments
 
 
-def delete_assignment(assignment_id: int, db: Session):
+def delete_assignment(assignment_id: int, assignment_deleter: User, db: Session):
     assignment = db.query(TeacherAssignment).filter(
         TeacherAssignment.assignment_id == assignment_id
     ).first()
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
+     
+    if assignment_deleter.designation not in [ "admin", "principal"]  :
+        raise HTTPException(status_code=403, detail="Only admin or principal can delete teachers' assignments")
 
     db.delete(assignment)
     db.commit()

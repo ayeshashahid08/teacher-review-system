@@ -34,3 +34,12 @@ class AcademicYearSettingCreate(BaseModel):
         if value < 1 or value > 365:
             raise ValueError("Total working days must be between 1 and 365")
         return value
+
+class AcademicYearSettingUpdate(BaseModel):
+    total_working_days: int
+
+    @field_validator("total_working_days")
+    def validate_days(cls, value):
+        if value < 1 or value > 365:
+            raise ValueError("Total working days must be between 1 and 365")
+        return value

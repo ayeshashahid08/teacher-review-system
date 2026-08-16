@@ -27,6 +27,15 @@ def generate(
     report = generate_monthly_report(data, db)
     return get_report_with_percentages(report.report_id, db)
 
+@router.get("/my")
+def get_my_monthly_reports(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from app.models.monthly_report import MonthlyReport
+    return db.query(MonthlyReport).filter(MonthlyReport.user_id == current_user.user_id, MonthlyReport.status == "approved").all()
+
+
 
 @router.get("/{report_id}", response_model=MonthlyReportDetail)
 def get_report(

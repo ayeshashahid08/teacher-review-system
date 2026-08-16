@@ -95,6 +95,7 @@ def get_my_observations(
     ).all()
 
 
+
 @router.get("/observations/submitted-by-me")
 def get_observations_submitted_by_me(
     current_user: User = Depends(get_current_user),
@@ -106,7 +107,7 @@ def get_observations_submitted_by_me(
     ).all()
 
 
-@router.get("/users/{user_id}", response_model = UserPublicResponse)
+@router.get("/users/{user_id}")
 def get_user(
     user_id: int,
     current_user: User = Depends(get_current_user),
@@ -115,7 +116,12 @@ def get_user(
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+
+    if current_user.designation in ["admin", "principal"]:
+        return UserFullResponse.model_validate(user)
+    else:
+        return UserPublicResponse.model_validate(user)
+    
 
 @router.get("/users/{user_id}/subjects")
 def get_subjects_for_user(

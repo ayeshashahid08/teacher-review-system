@@ -37,6 +37,24 @@ def get_ac_year_setting(academic_year: str, db: Session):
         raise HTTPException(status_code=404, detail="Academic year not found")
     return setting
 
+def update_ac_year_setting(academic_year: str, data: AcademicYearSettingCreate, updater: User, db: Session):
+    if updater.designation not in ["admin", "principal"]:
+        raise HTTPException(status_code=403, detail="Only admin or principal can manage academic year settings")
+
+    setting = db.query(AcademicYearSettings).filter(
+        AcademicYearSettings.academic_year == academic_year
+    ).first()
+    if not setting:
+        raise HTTPException(status_code=404, detail="Academic year not found")
+
+    if data.total_working_days < 1 or data.total_working_days > 365:
+        raise HTTPException(status_code=400, detail="Total working days must be between 1 and 365")
+
+    setting.total_working_days = data.total_working_days
+    db.commit()
+    db.refresh(setting)
+    return setting
+
 
 
 

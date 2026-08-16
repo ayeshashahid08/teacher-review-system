@@ -37,6 +37,7 @@ def get_all_assignments(
 @router.delete("/teacher-assignments/{assignment_id}")
 def assignment_delete(
     assignment_id: int,
+    assignment_deleter: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return delete_assignment(assignment_id, db)
+    return delete_assignment(assignment_id, assignment_deleter, db)

@@ -15,8 +15,8 @@ def add_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.designation != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can add users")
+    if current_user.designation not in [ "admin", "principal"]:
+        raise HTTPException(status_code=403, detail="Only admin and principal can add users")
     
     if user_data.designation == "admin":
         raise HTTPException(status_code=403, detail="Cannot create another admin account through this endpoint")
@@ -38,8 +38,8 @@ def remove_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.designation != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can remove users")
+    if current_user.designation not in [ "admin", "principal"]:
+        raise HTTPException(status_code=403, detail="Only admin and principal can add users")
     
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
@@ -52,17 +52,6 @@ def remove_user(
     return {"message": f"User {user.email} deactivated successfully"}
 
 
-# @router.get("/", response_model=list[UserResponse])
-# def list_users(
-#     current_user: User = Depends(get_current_user),
-#     db: Session = Depends(get_db)
-# ):
-#     if current_user.designation != "admin":
-#         raise HTTPException(status_code=403, detail="Only admin can view all users")
-    
-#     users = db.query(User).filter(User.is_active == True).all()
-#     return users
-
 @router.put("/edit/{user_id}", response_model=UserFullResponse)
 def edit_user(
     user_id: int,
@@ -70,9 +59,9 @@ def edit_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.designation != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can edit users")
-
+    if current_user.designation not in [ "admin", "principal"]:
+        raise HTTPException(status_code=403, detail="Only admin and principal can add users")
+    
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
