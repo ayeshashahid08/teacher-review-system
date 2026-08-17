@@ -25,22 +25,7 @@ def get_questions(
 ):
     return get_questions_grouped(question_type, db)
 
-# CREATE QUESTION
-# ADMIN / PRINCIPAL ONLY
-# -------------------------
 
-@router.post(
-    "",
-    response_model=QuestionResponse
-)
-def create(
-    data: QuestionCreate,
-    current_user: User = Depends(
-        require_role(["admin", "principal"])
-    ),
-    db: Session = Depends(get_db)
-):
-    return create_question(data, current_user, db)
 
 # CREATE QUESTION
 # ADMIN / PRINCIPAL ONLY

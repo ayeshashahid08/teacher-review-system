@@ -11,6 +11,7 @@ from app.schemas.observation import (
     ObservationDetailsUpdate,
     MCQResponseInput,
     RemarksInput,
+   
 )
 from app.services.observation_service import (
     start_observation_draft,
