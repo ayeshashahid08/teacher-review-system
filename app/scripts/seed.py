@@ -121,12 +121,161 @@ OBSERVATION_QUESTIONS = [
 ]
 
 ACR_QUESTIONS = [
-    ("Punctuality and attendance", 20),
-    ("Quality of lesson planning", 20),
-    ("Classroom management", 20),
-    ("Student engagement", 20),
-    ("Professional conduct", 20),
+
+    # ============================================================
+    # 1. ACADEMICS
+    # ============================================================
+
+    # A. In Class Performance
+    (
+        "Academics",
+        "In Class Performance",
+        """Effectively plans instruction and assessment making learning goals clear to students.
+Enters fully prepared for the class.
+Follows lesson plans.
+Maintains a good learning atmosphere; adequate use of audio/visual aids and other tools.
+Is able to analyze/assess and change teaching techniques/tools as per students' interests/scenarios.
+Utilizes proxy time efficiently.
+Invigilates as per expectation."""
+    ),
+
+    # B. Performance Beyond Class
+    (
+        "Academics",
+        "Performance Beyond Class",
+        """Is up to date with routine checking work.
+Has good level of satisfaction as per master checker's record.
+Maintains good quality of paper setting.
+Maintains good quality of paper checking.
+Makes results timely.
+Meets deadlines.
+Maintains all registers and planners.
+Extends cooperation when any extra task is assigned."""
+    ),
+
+
+    # ============================================================
+    # 2. TEACHER–STUDENT RELATIONSHIP
+    # ============================================================
+
+    # A. Academics
+    (
+        "Teacher-Student Relationship",
+        "Academics",
+        """Creates an environment that is positive for students and assists them to develop creative constructive behavior.
+Strives to ensure equitable opportunities for students in an unbiased manner whether students belong to her own class or other.
+Organizes class to encourage students for collaborative learning.
+Promotes confidence and perseverance in students for achieving the goals of the curriculum."""
+    ),
+
+    # B. Beyond Academics
+    (
+        "Teacher-Student Relationship",
+        "Beyond Academics",
+        """Encourages/motivates for co/extracurricular activities including assembly presentations.
+Keeps record of participation of students.
+Counsels students for rowdy behavior.
+Uses trainings provided for creating discipline.
+Is concerned for overall atmosphere and culture of the school."""
+    ),
+
+
+    # ============================================================
+    # 3. TEACHER–TEACHER RELATIONSHIP
+    # ============================================================
+
+    (
+        "Teacher-Teacher Relationship",
+        None,
+        """Shares ideas, materials and methods with other teachers.
+Uses praise, acceptance and humor when needed thus cultivating an atmosphere of positive relations.
+Goes out of the ways to provide support and cooperation to peers when required.
+Works with team spirit while carrying out extra-curricular activities and ensures program effectiveness."""
+    ),
+
+
+    # ============================================================
+    # 4. TEACHER–MANAGEMENT RELATIONSHIP
+    # ============================================================
+
+    (
+        "Teacher-Management Relationship",
+        None,
+        """Gives importance to co-ordination meetings and takes them seriously.
+Participates enthusiastically in In-school/Out-school workshops.
+Follows instructions for a constructive output and fulfills responsibilities.
+Accepts suggestions/criticism.
+Consults supervisors when needs advice.
+Offers suggestions for improvement through proper channels.
+Talks positively on every platform about the school.
+Is wise enough to discuss the problems/drawbacks to the concerned person.
+Stands with the management for the events organized by the management/top management."""
+    ),
+
+
+    # ============================================================
+    # 5. TEACHER–INTRA PERSONAL
+    # ============================================================
+
+    (
+        "Teacher-Intra Personal",
+        None,
+        """Believes in a growth mindset and not a fixed mindset (both in intellect and behavior).
+Adopts different ways to improve intellect and behavior (such as reading, YouTube/Google search, TED talks and study circles).
+Knows his/her strengths and weaknesses.
+Is emotionally balanced in showing expressions.
+Shows confidence in proving his/her mettle."""
+    ),
+
+
+    # ============================================================
+    # 6. TEACHER–PERSONAL ATTRIBUTES
+    # ============================================================
+
+    (
+        "Teacher-Personal Attributes",
+        None,
+        """Dresses as per dress code and maintains overall appearance as per policy.
+Performs duties (Miscellaneous) well.
+Shows honesty, integrity and truthfulness.
+Is sincere towards students and institution.
+Responds positively to parents' queries, suggestions and complaints.
+Uses mobile phone constructively.
+Enjoys work.
+Uses decent language.
+Is an organized person; maintains drawers, lockers, cupboards etc. well."""
+    ),
+
+
+    # ============================================================
+    # 7. REGULARITY AND PUNCTUALITY
+    # ============================================================
+
+    (
+        "Regularity and Punctuality",
+        None,
+        """Doesn't take unplanned leaves.
+Doesn't take uninformed leaves.
+Doesn't take frequent short leaves/half days.
+Doesn't get absent on Mondays.
+Doesn't get absent on Activity days/Exam days.
+Doesn't come late.
+Doesn't go on leave after a long vacation."""
+    ),
 ]
+
+ACR_MARKS = {
+    ("Academics", "In Class Performance"): 20,
+    ("Academics", "Performance Beyond Class"): 20,
+    ("Teacher-Student Relationship", "Academics"): 20,
+    ("Teacher-Student Relationship", "Beyond Academics"): 10,
+    ("Teacher-Teacher Relationship", None): 15,
+    ("Teacher-Management Relationship", None): 15,
+    ("Teacher-Intra Personal", None): 10,
+    ("Teacher-Personal Attributes", None): 10,
+    ("Regularity and Punctuality", None): 20,
+}
+
 
 ACR_OVERALL_GRADES = [
     (90, 100, "A+"),
