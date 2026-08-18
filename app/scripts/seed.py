@@ -374,38 +374,38 @@ def seed():
                 ))
         db.commit()
 
-        print("Seeding ACR questions and grade criteria...")
-        for question_text, max_marks in ACR_QUESTIONS:
-            existing_q = db.query(QuestionBank).filter(
-                QuestionBank.question_text == question_text
-            ).first()
-            if not existing_q:
-                new_q = QuestionBank(
-                    question_type="acr",
-                    question_text=question_text,
-                    is_active=True,
-                    created_by=admin.user_id,
-                    max_points=max_marks,
-                )
-                db.add(new_q)
-                db.flush()
+        # print("Seeding ACR questions and grade criteria...")
+        # for question_text, max_marks in ACR_QUESTIONS:
+        #     existing_q = db.query(QuestionBank).filter(
+        #         QuestionBank.question_text == question_text
+        #     ).first()
+        #     if not existing_q:
+        #         new_q = QuestionBank(
+        #             question_type="acr",
+        #             question_text=question_text,
+        #             is_active=True,
+        #             created_by=admin.user_id,
+        #             max_points=max_marks,
+        #         )
+        #         db.add(new_q)
+        #         db.flush()
 
-                for grade, (min_m, max_m) in zip(
-                    ["A+", "A", "B", "C"],
-                    [
-                        (int(max_marks * 0.85), max_marks),
-                        (int(max_marks * 0.70), int(max_marks * 0.84)),
-                        (int(max_marks * 0.55), int(max_marks * 0.69)),
-                        (0, int(max_marks * 0.54)),
-                    ]
-                ):
-                    db.add(ACRGradeCriteria(
-                        acr_question_id=new_q.question_id,
-                        min_marks=min_m,
-                        max_marks=max_m,
-                        grade=grade,
-                    ))
-        db.commit()
+        #         for grade, (min_m, max_m) in zip(
+        #             ["A+", "A", "B", "C"],
+        #             [
+        #                 (int(max_marks * 0.85), max_marks),
+        #                 (int(max_marks * 0.70), int(max_marks * 0.84)),
+        #                 (int(max_marks * 0.55), int(max_marks * 0.69)),
+        #                 (0, int(max_marks * 0.54)),
+        #             ]
+        #         ):
+        #             db.add(ACRGradeCriteria(
+        #                 acr_question_id=new_q.question_id,
+        #                 min_marks=min_m,
+        #                 max_marks=max_m,
+        #                 grade=grade,
+        #             ))
+        # db.commit()
 
         print("Seeding ACR overall grade criteria...")
         for min_p, max_p, grade in ACR_OVERALL_GRADES:

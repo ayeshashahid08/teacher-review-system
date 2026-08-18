@@ -72,7 +72,7 @@ def generate_monthly_report(data: MonthlyReportGenerate, db: Session) -> Monthly
         ObservationRemarks.observation_id.in_(observation_ids)
     ).all()
     remarks_summary = "\n".join(
-        f"- Strengths: {r.strengths or ''} | Improvement: {r.areas_of_improvement or ''} | Suggestions: {r.suggestions_recommendations or ''}".strip()
+        f"- general_observation: {r.general_observation or ''} | remarks_suggestions: {r.remarks_suggestions or ''}"
         for r in remarks_rows
     ) or "No written remarks recorded this month."
 
