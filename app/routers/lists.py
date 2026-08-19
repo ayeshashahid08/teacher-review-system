@@ -25,8 +25,19 @@ def get_classes(
     _: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return db.query(Class).all()
-
+    from app.models.grade import Grade
+    classes = db.query(Class).all()
+    result = []
+    for c in classes:
+        grade = db.query(Grade).filter(Grade.grade_id == c.grade_id).first()
+        result.append({
+            "class_id": c.class_id,
+            "grade_number": grade.grade_number,
+            "division": c.division,
+            "school_level": grade.school_level,
+            "display_name": f"Grade {grade.grade_number}{c.division}"
+        })
+    return result
 
 
 @router.get("/users")
@@ -140,20 +151,31 @@ def get_subjects_for_user(
     subjects = db.query(Subject).filter(Subject.subject_id.in_(subject_ids)).all()
     return subjects
 
-
 @router.get("/users/{user_id}/classes")
 def get_classes_for_user(
     user_id: int,
+    subject_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.models.grade import Grade
     assignments = db.query(TeacherAssignment).filter(
-        TeacherAssignment.user_id == user_id
+        TeacherAssignment.user_id == user_id,
+        TeacherAssignment.subject_id == subject_id
     ).all()
 
     if not assignments:
-        raise HTTPException(status_code=404, detail="No assignments found for this teacher")
+        raise HTTPException(status_code=404, detail="No classes found for this teacher and subject")
 
-    class_ids = [a.class_id for a in assignments]
-    classes = db.query(Class).filter(Class.class_id.in_(class_ids)).all()
-    return classes
+    result = []
+    for a in assignments:
+        class_ = db.query(Class).filter(Class.class_id == a.class_id).first()
+        grade = db.query(Grade).filter(Grade.grade_id == class_.grade_id).first()
+        result.append({
+            "class_id": class_.class_id,
+            "grade_number": grade.grade_number,
+            "division": class_.division,
+            "school_level": grade.school_level,
+            "display_name": f"Grade {grade.grade_number}{class_.division}"
+        })
+    return result

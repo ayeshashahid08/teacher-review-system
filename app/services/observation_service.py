@@ -11,6 +11,7 @@ from app.models.class_ import Class
 from app.models.question import QuestionBank
 from app.models.class_yearly_strength import ClassYearlyStrength
 from app.models.teacher_assignment import TeacherAssignment
+from app.models.grade import Grade
 
 from app.core.security import decode_access_token
 
@@ -210,8 +211,10 @@ def format_observation_response(obs: Observation, db: Session) -> dict:
     observer = db.query(User).filter(User.user_id == obs.observer_id).first()
     observee = db.query(User).filter(User.user_id == obs.observee_id).first()
     subject = db.query(Subject).filter(Subject.subject_id == obs.subject_id).first()
-    class_ = db.query(Class).filter(Class.class_id == obs.class_id).first()
 
+    class_ = db.query(Class).filter(Class.class_id == obs.class_id).first()
+    grade = db.query(Grade).filter(Grade.grade_id == class_.grade_id).first()
+    class_display = f"Grade {grade.grade_number}{class_.division}"
     
     academic_year = get_academic_year(obs)
     strength_record = db.query(ClassYearlyStrength).filter(
@@ -224,7 +227,7 @@ def format_observation_response(obs: Observation, db: Session) -> dict:
         "observer_name": f"{observer.first_name} {observer.last_name}",
         "observee_name": f"{observee.first_name} {observee.last_name}",
         "subject_name": subject.subject_name,
-        "class_name": class_.class_name,
+        "class_name": class_display,
         "class_strength": strength_record.strength if strength_record else None,
         "students_present": obs.students_present,
         "period": obs.period,

@@ -6,6 +6,7 @@ from app.models.teacher_assignment import TeacherAssignment
 from app.models.user import User
 from app.models.subject import Subject
 from app.models.class_ import Class
+from app.models.grade import Grade
 from app.schemas.teacher_assignment import TeacherAssignmentCreate
 
 
@@ -76,12 +77,14 @@ def format_assignment_response(assignment: TeacherAssignment, db: Session) -> di
     teacher = db.query(User).filter(User.user_id == assignment.user_id).first()
     subject = db.query(Subject).filter(Subject.subject_id == assignment.subject_id).first()
     class_ = db.query(Class).filter(Class.class_id == assignment.class_id).first()
+    grade = db.query(Grade).filter(Grade.grade_id == class_.grade_id).first()
+    class_display = f"Grade {grade.grade_number}{class_.division}"
 
     return {
         "assignment_id": assignment.assignment_id,
         "teacher_name": f"{teacher.first_name} {teacher.last_name}",
         "subject_name": subject.subject_name,
-        "class_name": class_.class_name,
+        "class_name": class_display,
     }
 
 

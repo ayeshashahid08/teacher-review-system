@@ -83,7 +83,37 @@ USERS = [
 
 SUBJECTS = ["Mathematics", "English", "Science", "Urdu"]
 
-CLASSES = ["Grade 5A", "Grade 6B", "Grade 7C"]
+# CLASSES = ["Grade 5A", "Grade 6B", "Grade 7C"]
+
+GRADES = [
+    {"grade_number": 1, "school_level": "primary"},
+    {"grade_number": 2, "school_level": "primary"},
+    {"grade_number": 3, "school_level": "primary"},
+    {"grade_number": 4, "school_level": "primary"},
+    {"grade_number": 5, "school_level": "primary"},
+    {"grade_number": 6, "school_level": "secondary"},
+    {"grade_number": 7, "school_level": "secondary"},
+    {"grade_number": 8, "school_level": "secondary"},
+    {"grade_number": 9, "school_level": "higher_secondary"},
+    {"grade_number": 10, "school_level": "higher_secondary"},
+    {"grade_number": 11, "school_level": "higher_secondary"},
+    {"grade_number": 12, "school_level": "higher_secondary"},
+]
+
+DIVISIONS_BY_GRADE = {
+    1: ["A", "B", "C", "D"],
+    2: ["A", "B", "C", "D"],
+    3: ["A", "B", "C", "D"],
+    4: ["A", "B", "C", "D"],
+    5: ["A", "B", "C", "D"],
+    6: ["A", "B", "C", "D"],
+    7: ["A", "B", "C", "D"],
+    8: ["A", "B", "C"],
+    9: ["A", "B", "C"],
+    10: ["A", "B", "C"],
+    11: ["A", "B", "C"],
+    12: ["A", "B", "C"],
+}
 
 CLASS_STRENGTHS = [
     {"class_name": "Grade 5A", "strength": 30},
@@ -286,12 +316,12 @@ ACR_OVERALL_GRADES = [
 ]
 
 TEACHER_ASSIGNMENTS = [
-    {"email": "teacher1@school.com", "subject_name": "Mathematics", "class_name": "Grade 5A", "classes_per_week": 5},
-    {"email": "teacher1@school.com", "subject_name": "Mathematics", "class_name": "Grade 6B", "classes_per_week": 3},
-    {"email": "teacher2@school.com", "subject_name": "English", "class_name": "Grade 5A", "classes_per_week": 4},
-    {"email": "teacher2@school.com", "subject_name": "Science", "class_name": "Grade 7C", "classes_per_week": 3},
-    {"email": "chiefcoord@school.com", "subject_name": "Urdu", "class_name": "Grade 6B", "classes_per_week": 2},
-    {"email": "peercoord@school.com", "subject_name": "Science", "class_name": "Grade 5A", "classes_per_week": 3},
+    {"email": "teacher1@school.com", "subject_name": "Mathematics", "grade_number": 5, "division": "A", "classes_per_week": 5},
+    {"email": "teacher1@school.com", "subject_name": "Mathematics", "grade_number": 6, "division": "B", "classes_per_week": 3},
+    {"email": "teacher2@school.com", "subject_name": "English", "grade_number": 5, "division": "A", "classes_per_week": 4},
+    {"email": "teacher2@school.com", "subject_name": "Science", "grade_number": 7, "division": "C", "classes_per_week": 3},
+    {"email": "chiefcoord@school.com", "subject_name": "Urdu", "grade_number": 6, "division": "B", "classes_per_week": 2},
+    {"email": "peercoord@school.com", "subject_name": "Science", "grade_number": 5, "division": "A", "classes_per_week": 3},
 ]
 
 def seed():
@@ -329,27 +359,41 @@ def seed():
                 db.add(Subject(subject_name=name))
         db.commit()
 
-        print("Seeding classes...")
-        for name in CLASSES:
-            if not db.query(Class).filter(Class.class_name == name).first():
-                db.add(Class(class_name=name))
+        # print("Seeding classes...")
+        # for name in CLASSES:
+        #     if not db.query(Class).filter(Class.class_name == name).first():
+        #         db.add(Class(class_name=name))
+        # db.commit()
+        print("Seeding class yearly strength...")
+        all_classes = db.query(Class).all()
+        for class_ in all_classes:
+            existing = db.query(ClassYearlyStrength).filter(
+                ClassYearlyStrength.class_id == class_.class_id,
+                ClassYearlyStrength.academic_year == ACADEMIC_YEAR
+            ).first()
+            if not existing:
+                db.add(ClassYearlyStrength(
+                    class_id=class_.class_id,
+                    academic_year=ACADEMIC_YEAR,
+                    strength=30  # default strength, admin can update later via endpoint
+                ))
         db.commit()
 
-        print("Seeding class yearly strength...")
-        for entry in CLASS_STRENGTHS:
-            class_ = db.query(Class).filter(Class.class_name == entry["class_name"]).first()
-            if class_:
-                existing = db.query(ClassYearlyStrength).filter(
-                    ClassYearlyStrength.class_id == class_.class_id,
-                    ClassYearlyStrength.academic_year == ACADEMIC_YEAR
-                ).first()
-                if not existing:
-                    db.add(ClassYearlyStrength(
-                        class_id=class_.class_id,
-                        academic_year=ACADEMIC_YEAR,
-                        strength=entry["strength"]
-                    ))
-        db.commit()
+        # print("Seeding class yearly strength...")
+        # for entry in CLASS_STRENGTHS:
+        #     class_ = db.query(Class).filter(Class.class_name == entry["class_name"]).first()
+        #     if class_:
+        #         existing = db.query(ClassYearlyStrength).filter(
+        #             ClassYearlyStrength.class_id == class_.class_id,
+        #             ClassYearlyStrength.academic_year == ACADEMIC_YEAR
+        #         ).first()
+        #         if not existing:
+        #             db.add(ClassYearlyStrength(
+        #                 class_id=class_.class_id,
+        #                 academic_year=ACADEMIC_YEAR,
+        #                 strength=entry["strength"]
+        #             ))
+        # db.commit()
 
         print("Seeding MCQ options...")
         for opt in MCQ_OPTIONS:
@@ -419,16 +463,41 @@ def seed():
                 ))
         db.commit()
 
+        print("Seeding grades...")
+        from app.models.grade import Grade
+
+        for g in GRADES:
+            if not db.query(Grade).filter(Grade.grade_number == g["grade_number"]).first():
+                db.add(Grade(grade_number=g["grade_number"], school_level=g["school_level"]))
+        db.commit()
+
+        print("Seeding classes...")
+        for grade_number, divisions in DIVISIONS_BY_GRADE.items():
+            grade = db.query(Grade).filter(Grade.grade_number == grade_number).first()
+            for division in divisions:
+                if not db.query(Class).filter(
+                    Class.grade_id == grade.grade_id,
+                    Class.division == division
+                ).first():
+                    db.add(Class(grade_id=grade.grade_id, division=division))
+        db.commit()
+
         print("Seeding teacher assignments...")
         
 
         for assignment in TEACHER_ASSIGNMENTS:
+            from app.models.grade import Grade
+
             user = db.query(User).filter(User.email == assignment["email"]).first()
             subject = db.query(Subject).filter(Subject.subject_name == assignment["subject_name"]).first()
-            class_ = db.query(Class).filter(Class.class_name == assignment["class_name"]).first()
+            grade = db.query(Grade).filter(Grade.grade_number == assignment["grade_number"]).first()
+            class_ = db.query(Class).filter(
+                Class.grade_id == grade.grade_id,
+                Class.division == assignment["division"]
+            ).first() if grade else None
 
             if not user or not subject or not class_:
-                print(f"Skipping assignment - missing user/subject/class for {assignment}")
+                print(f"Skipping assignment - missing data for {assignment}")
                 continue
 
             existing = db.query(TeacherAssignment).filter(

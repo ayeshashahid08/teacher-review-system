@@ -3,6 +3,7 @@ from fastapi import HTTPException
 
 from app.models.class_yearly_strength import ClassYearlyStrength
 from app.models.class_ import Class
+from app.models.grade import Grade
 from app.models.academic_year_settings import AcademicYearSettings
 from app.models.user import User
 from app.schemas.class_yearly_strength import ClassYearlyStrengthCreate
@@ -92,9 +93,12 @@ def delete_strength(class_id: int, academic_year: str, deleter: User, db: Sessio
 
 def format_strength_response(strength: ClassYearlyStrength, db: Session) -> dict:
     class_ = db.query(Class).filter(Class.class_id == strength.class_id).first()
+    grade = db.query(Grade).filter(Grade.grade_id == class_.grade_id).first()
+    class_display = f"Grade {grade.grade_number}{class_.division}"
+
     return {
         "class_id": strength.class_id,
-        "class_name": class_.class_name if class_ else None,
+        "class_name": class_display if class_ else None,
         "academic_year": strength.academic_year,
         "strength": strength.strength,
     }
