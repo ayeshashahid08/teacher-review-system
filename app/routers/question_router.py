@@ -82,3 +82,18 @@ def restore(
     db: Session = Depends(get_db)
 ):
     return restore_question(question_id, db)
+
+@router.patch("/{question_id}/update", response_model=QuestionResponse)
+def update(
+    question_id: int, 
+    data: QuestionUpdate,
+    current_user: User = Depends(require_role(["admin", "principal"])),
+    db: Session = Depends(get_db)):
+    return update_question(
+        question_id=question_id,
+        data=data,
+        db=db
+    )
+
+
+

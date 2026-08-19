@@ -13,6 +13,8 @@ from app.models.class_yearly_strength import ClassYearlyStrength
 from app.models.teacher_assignment import TeacherAssignment
 from app.models.grade import Grade
 
+from app.services.approval_service import initialize_approval_chain
+
 from app.core.security import decode_access_token
 
 from app.schemas.observation import (
@@ -195,6 +197,9 @@ def submit_observation(observation_id: int, db: Session) -> Observation:
     obs.status = "submitted"
     obs.submitted_at = datetime.utcnow()
     db.commit()
+    db.refresh(obs)
+    
+    initialize_approval_chain(observation_id, db)
     db.refresh(obs)
     return obs
     

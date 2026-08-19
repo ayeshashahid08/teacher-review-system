@@ -15,3 +15,5 @@ from app.models.academic_year_settings import AcademicYearSettings
 from app.models.class_yearly_strength import ClassYearlyStrength
 from app.models.password_reset_request import PasswordResetRequest
 from app.models.grade import Grade
+from app.models.coordinator_assignment import CoordinatorAssignment
+from app.models.observation_substitute import ObservationSubstitute

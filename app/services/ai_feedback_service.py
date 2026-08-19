@@ -49,38 +49,91 @@
 
 
 import time
+from typing import Union, List, Dict, Any
 from google import genai
 from google.genai.errors import ServerError, ClientError
 from app.core.config import settings
 
+# Initialize Gemini client
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-# Primary model and fallback model during high-demand spikes
 PRIMARY_MODEL = "gemini-3.6-flash"
 FALLBACK_MODEL = "gemini-2.5-pro"
 
 
-def generate_ai_feedback(mcq_summary: str, remarks_summary: str) -> str:
-    prompt = f"""You are writing a short performance feedback summary for a teacher's monthly review.
+def build_structured_mcq_summary(mcq_items: Union[str, List[Union[Dict[str, Any], Any]]]) -> str:
+    """
+    Pre-processes raw MCQ response data into structured performance tiers.
+    """
+    if isinstance(mcq_items, str):
+        return mcq_items
 
-MCQ score breakdown for this month (percentage of maximum marks per category):
-{mcq_summary}
+    strengths = []
+    moderate = []
+    needs_improvement = []
 
-Observer remarks collected this month:
+    for item in mcq_items:
+        if isinstance(item, dict):
+            text = item.get("question_text", "")
+            score = item.get("response_percentage", 0)
+        else:
+            text = getattr(item, "question_text", "")
+            score = getattr(item, "response_percentage", 0)
+
+        if score >= 85:
+            strengths.append(f"- {text} (Score: {score}%)")
+        elif score >= 50:
+            moderate.append(f"- {text} (Score: {score}%)")
+        else:
+            needs_improvement.append(f"- {text} (CRITICAL LOW Score: {score}%)")
+
+    lines = []
+    if strengths:
+        lines.append("TOP STRENGTHS (85%+ ONLY):\n" + "\n".join(strengths))
+    else:
+        lines.append("TOP STRENGTHS (85%+ ONLY):\n- None identified this month.")
+
+    if moderate:
+        lines.append("MODERATE / AVERAGE PERFORMANCE (50% - 84%):\n" + "\n".join(moderate))
+
+    if needs_improvement:
+        lines.append("SERIOUS WEAKNESSES / NEEDS IMMEDIATE IMPROVEMENT (Below 50%):\n" + "\n".join(needs_improvement))
+
+    return "\n\n".join(lines)
+
+
+def generate_ai_feedback(mcq_summary: Union[str, List[Any]], remarks_summary: str) -> str:
+    """
+    Generates structured, factual teacher review feedback strictly using
+    pre-processed performance tiers and observer remarks.
+    """
+    formatted_mcq = build_structured_mcq_summary(mcq_summary)
+
+    prompt = f"""You are writing a short, factual performance feedback summary for a teacher's monthly review.
+
+MCQ EVALUATION DATA:
+{formatted_mcq}
+
+OBSERVER REMARKS:
 {remarks_summary}
 
-Write a feedback summary that is STRICTLY between 80 and 100 words. It must:
-- Summarize the teacher's strong points based on the data above
-- Identify specific, actionable points of improvement the teacher can act on
-- Be written in a constructive, professional tone addressed to the teacher
-- Not invent facts not supported by the data above
+STRICT CONSTRAINTS (VIOLATIONS ARE UNACCEPTABLE):
+1. ACCURACY RULE FOR PREPARATION & LOW SCORES: 
+   - Look at the score for "Enters fully prepared for the class" and other items.
+   - If a category is listed under 'SERIOUS WEAKNESSES' (e.g. 25%), you MUST NOT praise it. NEVER say "excellent preparation", "great prep", or "well prepared" if preparation scored below 85%.
+   - You MUST explicitly call out low-scoring items (like coming to class unprepared) as primary areas needing improvement.
+2. NO GENERIC FLATTERY:
+   - Do NOT use fluffy words like "excellent", "outstanding", or "exceptional" unless referring specifically to a 100% item.
+3. PRAISE RULE: Restrict praise ONLY to items under 'TOP STRENGTHS (85%+ ONLY)'.
+4. IMPROVEMENT RULE: Focus constructive feedback directly on items under 'SERIOUS WEAKNESSES' and negative observer remarks.
+5. WORD COUNT: STRICTLY between 80 and 100 words.
+6. FORMAT: Plain text only. Direct tone addressed to the teacher ("You..."). No headings, no preamble.
 
-Return only the feedback text, no headings, no preamble."""
+Write the feedback summary:"""
 
     models_to_try = [PRIMARY_MODEL, FALLBACK_MODEL]
 
     for model in models_to_try:
-        # Retry up to 2 times per model if high demand hits
         for attempt in range(2):
             try:
                 response = client.models.generate_content(
@@ -89,7 +142,6 @@ Return only the feedback text, no headings, no preamble."""
                 )
                 return response.text.strip()
             except ServerError as e:
-                # Catch 503 Overloaded errors and wait briefly before retrying/falling back
                 if "503" in str(e) or "UNAVAILABLE" in str(e):
                     time.sleep(2)
                     continue
@@ -100,7 +152,7 @@ Return only the feedback text, no headings, no preamble."""
     raise RuntimeError("All configured Gemini models are currently experiencing high demand. Please try again in a moment.")
 
 
-def generate_ai_feedback_with_retry(mcq_summary: str, remarks_summary: str, max_attempts: int = 2) -> str:
+def generate_ai_feedback_with_retry(mcq_summary: Union[str, List[Any]], remarks_summary: str, max_attempts: int = 2) -> str:
     for _ in range(max_attempts):
         feedback = generate_ai_feedback(mcq_summary, remarks_summary)
         word_count = len(feedback.split())

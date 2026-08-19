@@ -314,6 +314,11 @@ ACR_OVERALL_GRADES = [
     (60, 69.99, "C"),
     (0, 59.99, "D"),
 ]
+COORDINATOR_ASSIGNMENTS = [
+    {"email": "chiefcoord@school.com", "coordinator_type": "chief_primary"},
+    {"email": "chiefcoord@school.com", "coordinator_type": "chief_secondary"},
+    {"email": "peercoord@school.com", "coordinator_type": "peer", "grade_number": 5},
+]
 
 TEACHER_ASSIGNMENTS = [
     {"email": "teacher1@school.com", "subject_name": "Mathematics", "grade_number": 5, "division": "A", "classes_per_week": 5},
@@ -343,6 +348,7 @@ def seed():
                 ))
         db.commit()
 
+        
         print("Seeding academic year...")
         if not db.query(AcademicYearSettings).filter(
             AcademicYearSettings.academic_year == ACADEMIC_YEAR
@@ -470,6 +476,51 @@ def seed():
             if not db.query(Grade).filter(Grade.grade_number == g["grade_number"]).first():
                 db.add(Grade(grade_number=g["grade_number"], school_level=g["school_level"]))
         db.commit()
+        print("Seeding coordinator assignments...")
+        from app.models.coordinator_assignment import CoordinatorAssignment
+
+        for ca in COORDINATOR_ASSIGNMENTS:
+            user = db.query(User).filter(User.email == ca["email"]).first()
+            if not user:
+                continue
+
+            class_id = None
+            subject_id = None
+
+            if ca.get("grade_number"):
+                grade = db.query(Grade).filter(
+                    Grade.grade_number == ca["grade_number"]
+                ).first()
+                if grade:
+                    class_ = db.query(Class).filter(
+                        Class.grade_id == grade.grade_id,
+                        Class.division == ca.get("division", "A")
+                    ).first()
+                    if class_:
+                        class_id = class_.class_id
+
+            if ca.get("subject_name"):
+                subject = db.query(Subject).filter(
+                    Subject.subject_name == ca["subject_name"]
+                ).first()
+                if subject:
+                    subject_id = subject.subject_id
+
+            existing = db.query(CoordinatorAssignment).filter(
+                CoordinatorAssignment.user_id == user.user_id,
+                CoordinatorAssignment.coordinator_type == ca["coordinator_type"]
+            ).first()
+
+            if not existing:
+                db.add(CoordinatorAssignment(
+                    user_id=user.user_id,
+                    coordinator_type=ca["coordinator_type"],
+                    class_id=class_id,
+                    subject_id=subject_id
+                ))
+
+        db.commit()
+        print("Coordinator assignments seeded.")
 
         print("Seeding classes...")
         for grade_number, divisions in DIVISIONS_BY_GRADE.items():
