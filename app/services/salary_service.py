@@ -11,6 +11,17 @@ from app.models.academic_year_settings import AcademicYearSettings
 from app.models.user import User
 from app.schemas.salary import SalaryEligibilityDecision
 
+from datetime import date
+
+def calculate_years_of_service(joining_date) -> int:
+    if not joining_date:
+        return None
+    today = date.today()
+    years = today.year - joining_date.year
+    if (today.month, today.day) < (joining_date.month, joining_date.day):
+        years -= 1
+    return years
+
 
 def get_teacher_salary_summary(user_id: int, academic_year: str, db: Session) -> dict:
     teacher = db.query(User).filter(User.user_id == user_id).first()
@@ -34,13 +45,17 @@ def get_teacher_salary_summary(user_id: int, academic_year: str, db: Session) ->
 
     approved_obs = [o for o in all_obs if o.status == "approved"]
 
+  
+
     # get scores for approved observations
     scores = []
+    
     for obs in approved_obs:
         score = db.query(Score).filter(Score.observation_id == obs.observation_id).first()
         if score and score.total_score is not None:
             scores.append(float(score.total_score))
 
+    # print(scores)
     avg_score = round(sum(scores) / len(scores), 2) if scores else None
     lowest = round(min(scores), 2) if scores else None
     highest = round(max(scores), 2) if scores else None
@@ -71,7 +86,7 @@ def get_teacher_salary_summary(user_id: int, academic_year: str, db: Session) ->
         "user_id": teacher.user_id,
         "teacher_name": f"{teacher.first_name} {teacher.last_name}",
         "designation": teacher.designation,
-        "years_of_service": teacher.years_of_service,
+        "years_of_service": calculate_years_of_service(teacher.joining_date),
         "teaching_load": teacher.teaching_load,
         "academic_year": academic_year,
         "total_observations": len(all_obs),
@@ -95,7 +110,7 @@ def get_teacher_salary_summary(user_id: int, academic_year: str, db: Session) ->
 
 def get_all_teachers_summary(academic_year: str, db: Session) -> list:
     teachers = db.query(User).filter(
-        User.designation.in_(["teacher", "coordinator", "peer_coordinator", "chief_coordinator"]),
+        User.designation=="teacher",
         User.is_active == True
     ).all()
 

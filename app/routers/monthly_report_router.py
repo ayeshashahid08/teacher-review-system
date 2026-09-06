@@ -52,8 +52,6 @@ def get_report(
 
     if role == "principal":
         pass  # principal can always view
-    elif role == "coordinator":
-        pass  # chief coordinator can view, but every write endpoint below excludes this role
     elif is_owner:
         if report.status != "approved":
             raise HTTPException(status_code=403, detail="Report is not yet approved")
@@ -102,7 +100,14 @@ def download_pdf(
 
     role = current_user.designation
     is_owner = current_user.user_id == report.user_id
-    if role not in ("principal", "coordinator") and not (is_owner and report.status == "approved"):
+    
+    from app.models.coordinator_assignment import CoordinatorAssignment
+    is_chief = db.query(CoordinatorAssignment).filter(
+        CoordinatorAssignment.user_id == current_user.user_id,
+        CoordinatorAssignment.coordinator_type.in_(["chief_primary", "chief_secondary"])
+    ).first()
+
+    if role != "principal" and not is_chief and not (is_owner and report.status == "approved"):
         raise HTTPException(status_code=403, detail="Not authorized to view this report")
 
     return FileResponse(report.pdf_path, media_type="application/pdf", filename=f"report_{report_id}.pdf")

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, observations, approvals, teacher_assignments, monthly_report_router, acr, users, lists, academic_year, class_yearly_strength, salary, question_router
+from app.routers import auth, observations, approvals, teacher_assignments, monthly_report_router, acr, users, lists, academic_year, class_yearly_strength, salary, question_router, coordinator_assignments
 from app.scripts.seed import seed as seed_data
 
 app = FastAPI(title="Teacher Review System")
@@ -25,6 +25,8 @@ app.include_router(lists.router)
 app.include_router(class_yearly_strength.router)
 app.include_router(salary.router)
 app.include_router(question_router.router)
+
+app.include_router(coordinator_assignments.router)
 
 @app.get("/")
 def root():

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class UserCreate(BaseModel):
     first_name: str
@@ -15,6 +15,7 @@ class UserCreate(BaseModel):
     additional_responsibilities: Optional[str] = None
     extra_credentials: Optional[str] = None
     # teaching_load: Optional[int] = None
+    joining_date: Optional[date] = None
 
     @field_validator("CNIC")
     def validate_cnic(cls, value):
@@ -46,7 +47,7 @@ class UserCreate(BaseModel):
 
     @field_validator("designation")
     def validate_designation(cls, value):
-        allowed = ["teacher", "chief coordinator", "peer coordinator", "principal", "admin"]
+        allowed = ["teacher", "principal", "admin"]
         if value.lower() not in allowed:
             raise ValueError(f"Designation must be one of: {allowed}")
         return value.lower()

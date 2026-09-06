@@ -59,9 +59,27 @@ def get_teachers(
     db: Session = Depends(get_db)
 ):
     return db.query(User).filter(
-        User.designation.in_(["teacher", "peer_coordinator", "chief_coordinator"]),
+        User.designation=="teacher",
         User.is_active == True
     ).all()
+
+@router.get("/users/teachers/dropdown")
+def get_teachers_dropdown(
+    _: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    teachers = db.query(User).filter(
+        User.designation == "teacher",
+        User.is_active == True
+    ).all()
+    return [
+        {
+            "user_id": t.user_id,
+            "display_name": f"{t.first_name} {t.last_name}"
+        }
+        for t in teachers
+    ]
+
 
 
 @router.get("/question-bank/observation")

@@ -56,8 +56,8 @@ def calculate_observation_score(
 
     ai_score = None
 
-    if remarks and remarks.ai_descriptive_total is not None:
-        ai_score = float(remarks.ai_descriptive_total)
+    # if remarks and remarks.ai_descriptive_total is not None:
+    #     ai_score = float(remarks.ai_descriptive_total)
 
     number_of_mcqs = len(mcq_responses)
 
@@ -67,11 +67,11 @@ def calculate_observation_score(
     max_possible_score = max_mcq_score + max_descriptive_score
 
     descriptive_score = 0.0
-    descriptive_score = (
-        score.written_score
-        if score.is_overridden
-        else ai_score
-)
+#     descriptive_score = (
+#         score.written_score
+#         if score.is_overridden
+#         else ai_score
+# )
 
     if ai_score is not None:
         descriptive_score = ai_score

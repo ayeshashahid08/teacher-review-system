@@ -86,7 +86,7 @@ def submit(
     return format_observation_response(submitted_obser, db)
 
 @router.put(
-    "/{observation_id}/override score",
+    "/{observation_id}/override-score",
     response_model=ScoreDetailResponse
 )
 def override_observation_score(
@@ -95,7 +95,7 @@ def override_observation_score(
     principal: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if principal.role != "principal":
+    if principal.designation != "principal":
         raise HTTPException(
             status_code=403,
             detail="Only principals can override scores"

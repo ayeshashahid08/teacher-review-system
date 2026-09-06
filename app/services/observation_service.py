@@ -61,6 +61,8 @@ def start_observation_draft(data: ObservationDraftCreate, observer_id: int, db: 
     return new_observation
     
 
+from app.core.utils import get_current_academic_year
+
 
 def update_observation_details(observation_id: int, data: ObservationDetailsUpdate, db: Session) -> Observation:
     observation = db.query(Observation).filter(Observation.observation_id == observation_id).first()
@@ -71,7 +73,20 @@ def update_observation_details(observation_id: int, data: ObservationDetailsUpda
         raise HTTPException(status_code=400, detail="Only draft observations can be edited")
 
     if data.students_present is not None:
+        academic_year = get_current_academic_year()
+        class_strength = db.query(ClassYearlyStrength).filter(
+            ClassYearlyStrength.class_id == observation.class_id,
+            ClassYearlyStrength.academic_year == academic_year
+        ).first()
+
+        if class_strength and data.students_present > class_strength.strength:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Students present ({data.students_present}) cannot exceed class strength ({class_strength.strength})"
+            )
+
         observation.students_present = data.students_present
+
     if data.period is not None:
         observation.period = data.period
     if data.topic is not None:

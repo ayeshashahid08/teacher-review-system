@@ -24,6 +24,16 @@ def get_current_academic_year() -> str:
 def start_acr(data: AcrCreate, reporter_id: int, db: Session):
     academic_year = get_current_academic_year()
 
+    year_settings = db.query(AcademicYearSettings).filter(
+        AcademicYearSettings.academic_year == academic_year
+    ).first()
+
+    if not year_settings:
+        raise HTTPException(status_code=404, detail="Academic year settings not found")
+
+    if data.days_present > year_settings.total_working_days:
+        raise HTTPException(status_code=400, detail="Days present cannot exceed total working days")
+
     reporter = db.query(User).filter(User.user_id == reporter_id).first()
     reported = db.query(User).filter(User.user_id == data.reported_id).first()
 
@@ -46,6 +56,26 @@ def start_acr(data: AcrCreate, reporter_id: int, db: Session):
     if reported.designation in ["teacher", "coordinator", "peer_coordinator"] and reporter.designation != "chief_coordinator":
         raise HTTPException(status_code=403, detail="Only chief coordinator can fill teacher ACR reports")
 
+    from app.models.coordinator_assignment import CoordinatorAssignment
+
+    # check if reporter is a chief coordinator
+    reporter_is_chief = db.query(CoordinatorAssignment).filter(
+        CoordinatorAssignment.user_id == reporter_id,
+        CoordinatorAssignment.coordinator_type.in_(["chief_primary", "chief_secondary"])
+    ).first()
+
+    # check if reported is a chief coordinator
+    reported_is_chief = db.query(CoordinatorAssignment).filter(
+        CoordinatorAssignment.user_id == data.reported_id,
+        CoordinatorAssignment.coordinator_type.in_(["chief_primary", "chief_secondary"])
+    ).first()
+
+    if reported_is_chief and reporter.designation != "principal":
+        raise HTTPException(status_code=403, detail="Only principal can fill chief coordinator's ACR")
+
+    if not reported_is_chief and not reporter_is_chief:
+        raise HTTPException(status_code=403, detail="Only chief coordinator can fill teacher ACR reports")
+
     existing = db.query(ACRReport).filter(
         ACRReport.reported_id == data.reported_id,
         ACRReport.academic_year == academic_year
@@ -53,6 +83,7 @@ def start_acr(data: AcrCreate, reporter_id: int, db: Session):
     if existing:
         raise HTTPException(status_code=400, detail="ACR already exists for this teacher this year")
 
+   
     new_acr = ACRReport(
         academic_year=academic_year,
         reported_id=data.reported_id,
@@ -175,6 +206,18 @@ def get_acr_full_state(acr_id: int, db: Session) -> dict:
     }
 
 
+from datetime import date
+
+def calculate_years_of_service(joining_date) -> int:
+    if not joining_date:
+        return None
+    today = date.today()
+    years = today.year - joining_date.year
+    if (today.month, today.day) < (joining_date.month, joining_date.day):
+        years -= 1
+    return years
+
+
 def format_acr_response(acr: ACRReport, db: Session) -> dict:
     reported = db.query(User).filter(User.user_id == acr.reported_id).first()
     reporter = db.query(User).filter(User.user_id == acr.reporter_id).first()
@@ -188,6 +231,7 @@ def format_acr_response(acr: ACRReport, db: Session) -> dict:
         "academic_year": acr.academic_year,
         "reported_name": f"{reported.first_name} {reported.last_name}",
         "reporter_name": f"{reporter.first_name} {reporter.last_name}",
+        "years_of_service": calculate_years_of_service(reported.joining_date),
         "days_present": acr.days_present,
         "total_working_days": year_settings.total_working_days if year_settings else None,
         "total_marks": acr.total_marks,
