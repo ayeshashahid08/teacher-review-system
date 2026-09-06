@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.observation import ObservationResponse
 from app.schemas.score import ScoreOverrideInput, ScoreDetailResponse
-from app.services.observation_service import override_observation_score
+# from app.services.observation_service import override_observation_score
 from app.services.auth_service import require_role
 
 from app.database import get_db
@@ -11,6 +11,7 @@ from app.schemas.observation import (
     ObservationDetailsUpdate,
     MCQResponseInput,
     RemarksInput,
+   
 )
 from app.services.observation_service import (
     start_observation_draft,
@@ -23,6 +24,7 @@ from app.services.observation_service import (
 )
 from app.services.auth_service import get_current_user
 from app.models.user import User
+from app.services.score_override_service import override_score
 
 router = APIRouter(prefix="/observations", tags=["Observations"])
 
@@ -83,11 +85,25 @@ def submit(
     submitted_obser = submit_observation(observation_id, db)
     return format_observation_response(submitted_obser, db)
 
-@router.put("/{observation_id}/override-score", response_model=ScoreDetailResponse)
-def override_score(
+@router.put(
+    "/{observation_id}/override-score",
+    response_model=ScoreDetailResponse
+)
+def override_observation_score(
     observation_id: int,
     data: ScoreOverrideInput,
-    principal: User = Depends(require_role(["principal"])),
+    principal: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return override_observation_score(observation_id, data, principal, db)
+    if principal.designation != "principal":
+        raise HTTPException(
+            status_code=403,
+            detail="Only principals can override scores"
+        )
+
+    return override_score(
+        observation_id=observation_id,
+        data=data,
+        principal=principal,
+        db=db
+    )

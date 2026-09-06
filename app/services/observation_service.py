@@ -8,13 +8,12 @@ from app.models.observation_remarks import ObservationRemarks
 from app.models.user import User
 from app.models.subject import Subject
 from app.models.class_ import Class
-from app.models.question import QuestionBank, QuestionOption
+from app.models.question import QuestionBank
 from app.models.class_yearly_strength import ClassYearlyStrength
-from app.models.score import Score
-from app.schemas.score import ScoreOverrideInput
 from app.models.teacher_assignment import TeacherAssignment
-from app.services.descriptive_ai_rating_service import rate_descriptive_section
-from app.services.grading_service import get_grade_for_percentage
+from app.models.grade import Grade
+
+from app.services.approval_service import initialize_approval_chain
 
 from app.core.security import decode_access_token
 
@@ -62,6 +61,8 @@ def start_observation_draft(data: ObservationDraftCreate, observer_id: int, db: 
     return new_observation
     
 
+from app.core.utils import get_current_academic_year
+
 
 def update_observation_details(observation_id: int, data: ObservationDetailsUpdate, db: Session) -> Observation:
     observation = db.query(Observation).filter(Observation.observation_id == observation_id).first()
@@ -72,7 +73,20 @@ def update_observation_details(observation_id: int, data: ObservationDetailsUpda
         raise HTTPException(status_code=400, detail="Only draft observations can be edited")
 
     if data.students_present is not None:
+        academic_year = get_current_academic_year()
+        class_strength = db.query(ClassYearlyStrength).filter(
+            ClassYearlyStrength.class_id == observation.class_id,
+            ClassYearlyStrength.academic_year == academic_year
+        ).first()
+
+        if class_strength and data.students_present > class_strength.strength:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Students present ({data.students_present}) cannot exceed class strength ({class_strength.strength})"
+            )
+
         observation.students_present = data.students_present
+
     if data.period is not None:
         observation.period = data.period
     if data.topic is not None:
@@ -122,115 +136,36 @@ def save_mcq_response(observation_id: int, data: MCQResponseInput, db: Session) 
     db.refresh(response)
     return response
 
+
 def save_remarks(observation_id: int, data: RemarksInput, db: Session) -> ObservationRemarks:
+    observation = db.query(Observation).filter(Observation.observation_id == observation_id).first()
+    if not observation:
+        raise HTTPException(status_code=404, detail="Not Found")
+    
+    if observation.status != "draft":
+        raise HTTPException(status_code=400, detail="Only draft observations can be edited")
+    
     remarks = db.query(ObservationRemarks).filter(
         ObservationRemarks.observation_id == observation_id
     ).first()
 
     if remarks:
-        if data.strengths is not None:
-            remarks.strengths = data.strengths
-        if data.areas_of_improvement is not None:
-            remarks.areas_of_improvement = data.areas_of_improvement
-        if data.suggestions_recommendations is not None:
-            remarks.suggestions_recommendations = data.suggestions_recommendations
+        if data.general_observation is not None:
+            remarks.general_observation = data.general_observation
+        if data.remarks_suggestions is not None:
+            remarks.remarks_suggestions = data.remarks_suggestions
     else:
         remarks = ObservationRemarks(
             observation_id=observation_id,
-            strengths=data.strengths,
-            areas_of_improvement=data.areas_of_improvement,
-            suggestions_recommendations=data.suggestions_recommendations,
+            general_observation=data.general_observation,
+            remarks_suggestions=data.remarks_suggestions
         )
         db.add(remarks)
 
     db.commit()
     db.refresh(remarks)
-
-    # Once all 3 fields are present, ask the AI to rate them.
-    # Re-runs on every edit so the rating always reflects the latest text.
-    if remarks.strengths and remarks.areas_of_improvement and remarks.suggestions_recommendations:
-        rating = rate_descriptive_section(
-            remarks.strengths, remarks.areas_of_improvement, remarks.suggestions_recommendations
-        )
-        remarks.ai_strengths_score = rating["strengths_score"]
-        remarks.ai_improvement_score = rating["improvement_score"]
-        remarks.ai_suggestions_score = rating["suggestions_score"]
-        remarks.ai_descriptive_total = rating["total_score"]
-        remarks.ai_rationale = rating["rationale"]
-        db.commit()
-        db.refresh(remarks)
-
     return remarks
 
-def compute_observation_score(observation_id: int, db: Session) -> Score:
-    mcq_responses = db.query(ObservationMCQResponse).filter(
-        ObservationMCQResponse.observation_id == observation_id
-    ).all()
-
-    mcq_points_earned = 0.0
-    for response in mcq_responses:
-        option = db.query(QuestionOption).filter(
-            QuestionOption.option_id == response.selected_option_id
-        ).first()
-        if option:
-            mcq_points_earned += float(option.score_value)
-
-    num_mcqs = db.query(QuestionBank).filter(
-        QuestionBank.question_type == "observation",
-        QuestionBank.is_active == True
-    ).count()
-
-    remarks = db.query(ObservationRemarks).filter(
-        ObservationRemarks.observation_id == observation_id
-    ).first()
-    descriptive_score = float(remarks.ai_descriptive_total) if remarks and remarks.ai_descriptive_total is not None else 0.0
-
-    max_possible = (num_mcqs * 1) + 9   # 1 pt per MCQ + 9 for the descriptive section
-    total_earned = mcq_points_earned + descriptive_score
-    percentage = (total_earned / max_possible) * 100 if max_possible else 0
-
-    grade = get_grade_for_percentage(percentage, db)
-
-    score = db.query(Score).filter(Score.observation_id == observation_id).first()
-    if not score:
-        score = Score(observation_id=observation_id)
-        db.add(score)
-
-    score.mcq_score = mcq_points_earned
-    score.ai_score = descriptive_score
-    score.max_possible_score = max_possible
-    score.total_score = total_earned
-    score.percentage = round(percentage, 2)
-    score.grade = grade
-
-    db.commit()
-    db.refresh(score)
-    return score
-
-def override_observation_score(observation_id: int, data: ScoreOverrideInput, principal: User, db: Session) -> Score:
-    score = db.query(Score).filter(Score.observation_id == observation_id).first()
-    if not score:
-        raise HTTPException(status_code=404, detail="No score exists yet for this observation — submit it first")
-
-    obs = db.query(Observation).filter(Observation.observation_id == observation_id).first()
-    if not obs or obs.status not in ("submitted", "pending_chief_coordinator", "pending_peer_coordinator", "approved"):
-        raise HTTPException(status_code=400, detail="Observation must be submitted before its score can be overridden")
-
-    score.written_score = data.written_score
-    score.is_overridden = True
-    score.override_reason = data.override_reason
-
-    # descriptive component now comes from the principal's override instead of the AI score
-    total_earned = score.mcq_score + score.written_score
-    percentage = (total_earned / score.max_possible_score) * 100 if score.max_possible_score else 0
-
-    score.total_score = total_earned
-    score.percentage = round(percentage, 2)
-    score.grade = get_grade_for_percentage(percentage, db)
-
-    db.commit()
-    db.refresh(score)
-    return score
 
 def get_full_observation_state(observation_id: int, db: Session) -> dict:
     target_obs = db.query(Observation).filter(Observation.observation_id == observation_id).first()
@@ -259,11 +194,8 @@ def submit_observation(observation_id: int, db: Session) -> Observation:
     remarks = db.query(ObservationRemarks).filter(
         ObservationRemarks.observation_id == observation_id
     ).first()
-    if (not remarks or remarks.strengths is None or remarks.areas_of_improvement is None
-            or remarks.suggestions_recommendations is None):
-        raise HTTPException(status_code=400, detail="Please complete strengths, areas of improvement, and suggestions before submitting")
-    if remarks.ai_descriptive_total is None:
-        raise HTTPException(status_code=400, detail="AI rating for the descriptive section is not ready yet")
+    if not remarks or remarks.general_observation is None or remarks.remarks_suggestions is None:
+        raise HTTPException(status_code=400, detail="Please complete the remarks section before submitting")
 
     total_ques = db.query(QuestionBank).filter(
         QuestionBank.question_type == "observation",
@@ -281,9 +213,9 @@ def submit_observation(observation_id: int, db: Session) -> Observation:
     obs.submitted_at = datetime.utcnow()
     db.commit()
     db.refresh(obs)
-
-    compute_observation_score(observation_id, db)  # writes mcq_score, ai_score, total_score, percentage, grade to Score
-
+    
+    initialize_approval_chain(observation_id, db)
+    db.refresh(obs)
     return obs
     
 def get_academic_year(obs: Observation) ->str:
@@ -299,8 +231,10 @@ def format_observation_response(obs: Observation, db: Session) -> dict:
     observer = db.query(User).filter(User.user_id == obs.observer_id).first()
     observee = db.query(User).filter(User.user_id == obs.observee_id).first()
     subject = db.query(Subject).filter(Subject.subject_id == obs.subject_id).first()
-    class_ = db.query(Class).filter(Class.class_id == obs.class_id).first()
 
+    class_ = db.query(Class).filter(Class.class_id == obs.class_id).first()
+    grade = db.query(Grade).filter(Grade.grade_id == class_.grade_id).first()
+    class_display = f"Grade {grade.grade_number}{class_.division}"
     
     academic_year = get_academic_year(obs)
     strength_record = db.query(ClassYearlyStrength).filter(
@@ -313,7 +247,7 @@ def format_observation_response(obs: Observation, db: Session) -> dict:
         "observer_name": f"{observer.first_name} {observer.last_name}",
         "observee_name": f"{observee.first_name} {observee.last_name}",
         "subject_name": subject.subject_name,
-        "class_name": class_.class_name,
+        "class_name": class_display,
         "class_strength": strength_record.strength if strength_record else None,
         "students_present": obs.students_present,
         "period": obs.period,

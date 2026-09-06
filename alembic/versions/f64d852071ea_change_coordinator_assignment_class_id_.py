@@ -1,8 +1,8 @@
-"""add 
+"""change coordinator assignment class_id to grade_id
 
-Revision ID: 5ff702800427
-Revises: 195dcb7cb30d
-Create Date: 2026-08-04 04:09:58.063394
+Revision ID: f64d852071ea
+Revises: 13ac485629a0
+Create Date: 2026-08-31 13:23:37.013826
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '5ff702800427'
-down_revision: Union[str, Sequence[str], None] = '195dcb7cb30d'
+revision: str = 'f64d852071ea'
+down_revision: Union[str, Sequence[str], None] = '13ac485629a0'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

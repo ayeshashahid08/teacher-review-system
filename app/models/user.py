@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey, Text, Date
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -23,4 +23,5 @@ class User(Base):
     teaching_load = Column(Integer)
     added_by = Column(Integer, ForeignKey("users.user_id"))
     must_change_password = Column(Boolean, default=True)
+    joining_date = Column(Date, nullable=True)
     

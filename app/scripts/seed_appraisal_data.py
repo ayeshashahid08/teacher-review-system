@@ -1,6 +1,9 @@
+from unicodedata import category
+
 from app.database import SessionLocal
 from app.models.question import QuestionBank, QuestionOption
-from app.models.acr import ACROverallGradeCriteria  # adjust import to your actual file
+from app.models.acr import ACROverallGradeCriteria
+from app.scripts.seed import ACR_MARKS, ACR_QUESTIONS  # adjust import to your actual file
 
 ADMIN_USER_ID = 1  # replace with a real admin/HR user_id from your users table
 
@@ -65,7 +68,24 @@ def seed():
                     created_by=ADMIN_USER_ID,
                 ))
         db.commit()
+        for section, subsection, text in ACR_QUESTIONS:
+            # Check if question already exists
+            existing_question = db.query(QuestionBank).filter(
+                QuestionBank.question_text == text
+            ).first()
 
+            if not existing_question:
+                max_marks = ACR_MARKS.get((section, subsection))
+
+                question = QuestionBank(
+                    category=section,
+                    subsection=subsection,
+                    question_text=text,
+                    max_marks=max_marks
+                )
+
+                db.add(question)
+        db.commit()
         for min_p, max_p, grade in GRADE_BANDS:
             if not db.query(ACROverallGradeCriteria).filter(ACROverallGradeCriteria.grade == grade).first():
                 db.add(ACROverallGradeCriteria(min_percentage=min_p, max_percentage=max_p, grade=grade))

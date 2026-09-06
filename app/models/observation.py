@@ -9,7 +9,7 @@ class Observation(Base):
     observer_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     observee_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     subject_id = Column(Integer, ForeignKey("subjects.subject_id"), nullable=False)
-    class_id = Column(Integer, ForeignKey("class.class_id"), nullable=False)
+    class_id = Column(Integer, ForeignKey("classes.class_id"), nullable=False)
     students_present = Column(Integer)
     period = Column(Integer)
     topic = Column(String)
