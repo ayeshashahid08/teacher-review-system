@@ -34,12 +34,12 @@ def create_coordinator_assignment(
     if data.coordinator_type == "subject" and not data.subject_id:
         raise HTTPException(status_code=400, detail="subject_id is required for subject coordinator")
 
-    if data.coordinator_type in ["chief_primary", "chief_secondary"] and (data.class_id or data.subject_id):
+    if data.coordinator_type in ["chief_primary", "chief_secondary"] and (data.grade_id or data.subject_id):
         raise HTTPException(status_code=400, detail="Chief coordinators don't need class or subject assignment")
 
     existing = db.query(CoordinatorAssignment).filter(
         CoordinatorAssignment.coordinator_type == data.coordinator_type,
-        CoordinatorAssignment.class_id == data.class_id,
+        CoordinatorAssignment.grade_id == data.grade_id,
         CoordinatorAssignment.subject_id == data.subject_id
     ).first()
     if existing:
@@ -51,7 +51,7 @@ def create_coordinator_assignment(
     new_assignment = CoordinatorAssignment(
         user_id=data.user_id,
         coordinator_type=data.coordinator_type,
-        class_id=data.class_id,
+        grade_id=data.grade_id,
         subject_id=data.subject_id
     )
     db.add(new_assignment)
@@ -84,8 +84,8 @@ def format_coordinator_response(assignment: CoordinatorAssignment, db: Session) 
     user = db.query(User).filter(User.user_id == assignment.user_id).first()
 
     class_display = None
-    if assignment.class_id:
-        class_ = db.query(Class).filter(Class.class_id == assignment.class_id).first()
+    if assignment.grade_id:
+        class_ = db.query(Class).filter(Class.grade_id == assignment.grade_id).first()
         if class_:
             grade = db.query(Grade).filter(Grade.grade_id == class_.grade_id).first()
             class_display = f"Grade {grade.grade_number}{class_.division}"

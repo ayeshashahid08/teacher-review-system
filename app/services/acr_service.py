@@ -34,8 +34,22 @@ def start_acr(data: AcrCreate, reporter_id: int, db: Session):
     if data.days_present > year_settings.total_working_days:
         raise HTTPException(status_code=400, detail="Days present cannot exceed total working days")
 
+    # Get the two users
     reporter = db.query(User).filter(User.user_id == reporter_id).first()
     reported = db.query(User).filter(User.user_id == data.reported_id).first()
+
+    # Get their coordinator types (if any)
+    # reporter_designation = (
+    #     db.query(CoordinatorAssignment.coordinator_type)
+    #     .filter(CoordinatorAssignment.user_id == reporter_id)
+    #     .scalar()
+    # )
+
+    # reported_designation = (
+    #     db.query(CoordinatorAssignment.coordinator_type)
+    #     .filter(CoordinatorAssignment.user_id == data.reported_id)
+    #     .scalar()
+    # )
 
     if not reported:
         raise HTTPException(status_code=404, detail="Teacher not found")
@@ -48,13 +62,13 @@ def start_acr(data: AcrCreate, reporter_id: int, db: Session):
     if reported.designation == "principal" or reported.designation == "admin" :
         raise HTTPException(status_code=403, detail="Principal and admin does not have an ACR report")
 
-    # chief coordinator's ACR can only be filled by principal
-    if reported.designation == "chief_coordinator" and reporter.designation != "principal":
-        raise HTTPException(status_code=403, detail="Only principal can fill chief coordinator's ACR")
+    # # chief coordinator's ACR can only be filled by principal
+    # if reported_designation == "chief_coordinator" and reporter_designation != "principal":
+    #     raise HTTPException(status_code=403, detail="Only principal can fill chief coordinator's ACR")
 
-    # regular teachers' ACR can only be filled by chief coordinator
-    if reported.designation in ["teacher", "coordinator", "peer_coordinator"] and reporter.designation != "chief_coordinator":
-        raise HTTPException(status_code=403, detail="Only chief coordinator can fill teacher ACR reports")
+    # # regular teachers' ACR can only be filled by chief coordinator
+    # if reported_designation in ["teacher", "coordinator", "peer_coordinator"] and reporter_designation != "chief_coordinator":
+    #     raise HTTPException(status_code=403, detail="Only chief coordinator can fill teacher ACR reports")
 
     from app.models.coordinator_assignment import CoordinatorAssignment
 
