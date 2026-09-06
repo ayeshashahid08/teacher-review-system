@@ -34,3 +34,25 @@ class ACRReportResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AcrApprovalAction(BaseModel):
+    action:str
+    comments:Optional[str] = None
+
+    @field_validator("action")
+    def validate_action(cls, value):
+        allowed = ["approved", "revision_requested"]
+        if value not in allowed:
+            raise ValueError(f"Action must be one of: {allowed}")
+        return value
+
+class AcrApprovalResponse(BaseModel):
+    approval_id: int
+    acr_id: int
+    principal_name: Optional[str] = None
+    action: str
+    comments: Optional[str] = None
+    acted_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

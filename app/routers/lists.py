@@ -7,8 +7,11 @@ from app.models.user import User
 from app.models.subject import Subject
 from app.models.class_ import Class
 from app.models.question import QuestionBank
+from app.models.acr import ACRReport
 from app.schemas.user import UserPublicResponse, UserFullResponse
 from app.models.teacher_assignment import TeacherAssignment
+from app.services.acr_service import format_acr_response
+from app.services.observation_service import format_observation_response
 router = APIRouter(tags=["Lists"])
 
 
@@ -197,3 +200,36 @@ def get_classes_for_user(
             "display_name": f"Grade {grade.grade_number}{class_.division}"
         })
     return result
+
+@router.get("/my-acr")
+def get_my_acr(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    reports = db.query(ACRReport).filter(
+        ACRReport.reported_id == current_user.user_id,
+        ACRReport.status == "approved"
+    ).all()
+    return [format_acr_response(r, db) for r in reports]
+
+@router.get("/my-drafts")
+def get_my_drafts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    drafts = db.query(Observation).filter(
+        Observation.observer_id == current_user.user_id,
+        Observation.status == "draft"
+    ).all()
+    return [format_observation_response(obs, db) for obs in drafts]
+
+
+@router.get("/reports-submitted-by-me")
+def get_my_acr_reports(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    reports = db.query(ACRReport).filter(
+        ACRReport.reporter_id == current_user.user_id
+    ).all()
+    return [format_acr_response(r, db) for r in reports]

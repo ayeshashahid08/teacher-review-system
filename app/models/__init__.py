@@ -17,3 +17,4 @@ from app.models.password_reset_request import PasswordResetRequest
 from app.models.grade import Grade
 from app.models.coordinator_assignment import CoordinatorAssignment
 from app.models.observation_substitute import ObservationSubstitute
+from app.models.acr_approval import ACRApproval
