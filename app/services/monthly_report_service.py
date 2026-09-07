@@ -15,6 +15,53 @@ from app.schemas.monthly_report import MonthlyReportGenerate, MonthlyReportEdit
 from app.services.ai_feedback_service import generate_ai_feedback_with_retry
 
 
+def calculate_mcq_percentages(
+    db: Session,
+    observation_ids: list[int],
+):
+    mcq_rows = db.query(ObservationMCQResponse).filter(
+        ObservationMCQResponse.observation_id.in_(observation_ids)
+    ).all()
+
+    per_question_scores = defaultdict(list)
+
+    for row in mcq_rows:
+        option = db.query(QuestionOption).filter(
+            QuestionOption.option_id == row.selected_option_id
+        ).first()
+
+        if option is not None:
+            per_question_scores[row.question_id].append(
+                float(option.score_value)
+            )
+
+    results = []
+
+    for question_id, values in per_question_scores.items():
+        question = db.query(QuestionBank).filter(
+            QuestionBank.question_id == question_id
+        ).first()
+
+        if not values:
+            continue
+
+        average_score = sum(values) / len(values)
+
+        results.append({
+            "question_id": question_id,
+            "question_text": (
+                question.question_text
+                if question
+                else "Unknown"
+            ),
+            "response_percentage": round(
+                average_score * 100,
+                2,
+            ),
+        })
+
+    return results
+
 def generate_monthly_report(data: MonthlyReportGenerate, db: Session) -> MonthlyReport:
     observations = db.query(Observation).filter(
         Observation.observee_id == data.user_id,
@@ -37,36 +84,11 @@ def generate_monthly_report(data: MonthlyReportGenerate, db: Session) -> Monthly
     total_scores = [float(s.total_score) for s in scores if s.total_score is not None]
     average_score = sum(total_scores) / len(total_scores) if total_scores else None
 
-    # ---- per-question percentage across the month ----
-    mcq_rows = db.query(ObservationMCQResponse).filter(
-        ObservationMCQResponse.observation_id.in_(observation_ids)
-    ).all()
-
-    per_question_scores = defaultdict(list)
-    for row in mcq_rows:
-        option = db.query(QuestionOption).filter(
-            QuestionOption.option_id == row.selected_option_id
-        ).first()
-        if option is not None:
-            per_question_scores[row.question_id].append(float(option.score_value))
-
-    max_score_by_question = {}
-    all_options = db.query(QuestionOption).all()
-    # NOTE: QuestionOption in your models isn't linked to QuestionBank by FK yet -
-    # if you add that FK, replace this block with a proper join to get max per question.
-
-    mcq_percentages = []
-    for question_id, values in per_question_scores.items():
-        question = db.query(QuestionBank).filter(QuestionBank.question_id == question_id).first()
-        avg_value = sum(values) / len(values)
-        max_possible = max(values) if values else 1  # fallback until QuestionOption<->QuestionBank link exists
-        percentage = (avg_value / max_possible) * 100 if max_possible else 0
-        mcq_percentages.append({
-            "question_id": question_id,
-            "question_text": question.question_text if question else "Unknown",
-            "response_percentage": round(percentage, 2),
-        })
-
+    # Per-question MCQ percentage across the month
+    mcq_percentages = calculate_mcq_percentages(
+    db,
+    observation_ids,
+)   
     # ---- remarks text for AI feedback ----
     remarks_rows = db.query(ObservationRemarks).filter(
         ObservationRemarks.observation_id.in_(observation_ids)
@@ -167,26 +189,10 @@ def get_report_with_percentages(report_id: int, db: Session) -> dict:
         if o.observed_at.month == report.month and o.observed_at.year == report.year
     ]
 
-    mcq_rows = db.query(ObservationMCQResponse).filter(
-        ObservationMCQResponse.observation_id.in_(observation_ids)
-    ).all()
-    per_question_scores = defaultdict(list)
-    for row in mcq_rows:
-        option = db.query(QuestionOption).filter(QuestionOption.option_id == row.selected_option_id).first()
-        if option is not None:
-            per_question_scores[row.question_id].append(float(option.score_value))
-
-    mcq_percentages = []
-    for question_id, values in per_question_scores.items():
-        question = db.query(QuestionBank).filter(QuestionBank.question_id == question_id).first()
-        avg_value = sum(values) / len(values)
-        percentage = (avg_value / 1) * 100  # every MCQ now has a fixed max of 1 point, so no guessing needed
-        mcq_percentages.append({
-            "question_id": question_id,
-            "question_text": question.question_text if question else "Unknown",
-            "response_percentage": round(percentage, 2),
-        })
-
+    mcq_percentages = calculate_mcq_percentages(
+    db,
+    observation_ids,
+)
     return {
         "report_id": report.report_id,
         "teacher_name": f"{teacher.first_name} {teacher.last_name}",
