@@ -24,4 +24,9 @@ class User(Base):
     added_by = Column(Integer, ForeignKey("users.user_id"))
     must_change_password = Column(Boolean, default=True)
     joining_date = Column(Date, nullable=True)
+
+    # New contact fields
+    whatsapp_number = Column(String, nullable=True)
+    emergency_number = Column(String, nullable=True)
+    residential_address = Column(Text, nullable=True)
     

@@ -26,12 +26,15 @@ def register_user(user_data: UserCreate, db: Session) -> User:
         qualification=user_data.qualification,
         additional_responsibilities=user_data.additional_responsibilities,
         extra_credentials=user_data.extra_credentials,
+        joining_date=user_data.joining_date,
+        whatsapp_number=user_data.whatsapp_number,
+        emergency_number=user_data.emergency_number,
+        residential_address=user_data.residential_address,
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
-
 
 def authenticate_user(email: str, password: str, db: Session) -> User:
     user = db.query(User).filter(User.email == email).first()

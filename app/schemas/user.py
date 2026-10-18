@@ -1,6 +1,24 @@
+import re
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime, date
+
+
+def _clean_phone(value: str, label: str) -> str:
+    cleaned = re.sub(r"[\s\-()]", "", value)
+    if not re.fullmatch(r"\+?\d{10,15}", cleaned):
+        raise ValueError(f"{label} must be a valid phone number (10-15 digits, optional leading +)")
+    return cleaned
+
+
+def _clean_address(value: str) -> str:
+    value = value.strip()
+    if not value:
+        raise ValueError("Residential address cannot be empty")
+    if len(value) > 500:
+        raise ValueError("Residential address must be at most 500 characters")
+    return value
+
 
 class UserCreate(BaseModel):
     first_name: str
@@ -16,6 +34,9 @@ class UserCreate(BaseModel):
     extra_credentials: Optional[str] = None
     # teaching_load: Optional[int] = None
     joining_date: Optional[date] = None
+    whatsapp_number: str
+    emergency_number: str
+    residential_address: str
 
     @field_validator("CNIC")
     def validate_cnic(cls, value):
@@ -51,7 +72,20 @@ class UserCreate(BaseModel):
         if value.lower() not in allowed:
             raise ValueError(f"Designation must be one of: {allowed}")
         return value.lower()
-        
+
+    @field_validator("whatsapp_number")
+    def validate_whatsapp_number(cls, value):
+        return _clean_phone(value, "WhatsApp number")
+
+    @field_validator("emergency_number")
+    def validate_emergency_number(cls, value):
+        return _clean_phone(value, "Emergency number")
+
+    @field_validator("residential_address")
+    def validate_residential_address(cls, value):
+        return _clean_address(value)
+
+
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -63,6 +97,9 @@ class UserUpdate(BaseModel):
     qualification: Optional[str] = None
     additional_responsibilities: Optional[str] = None
     extra_credentials: Optional[str] = None
+    whatsapp_number: Optional[str] = None
+    emergency_number: Optional[str] = None
+    residential_address: Optional[str] = None
 
     @field_validator("CNIC")
     def validate_cnic(cls, value):
@@ -97,6 +134,25 @@ class UserUpdate(BaseModel):
             raise ValueError(f"Designation must be one of: {allowed}")
         return value.lower()
 
+    @field_validator("whatsapp_number")
+    def validate_whatsapp_number(cls, value):
+        if value is None:
+            return value
+        return _clean_phone(value, "WhatsApp number")
+
+    @field_validator("emergency_number")
+    def validate_emergency_number(cls, value):
+        if value is None:
+            return value
+        return _clean_phone(value, "Emergency number")
+
+    @field_validator("residential_address")
+    def validate_residential_address(cls, value):
+        if value is None:
+            return value
+        return _clean_address(value)
+
+
 class UserPublicResponse(BaseModel):
     user_id: int
     first_name: str
@@ -122,9 +178,13 @@ class UserFullResponse(BaseModel):
     years_of_service: Optional[int] = None
     joined_at: Optional[datetime] = None
     must_change_password: bool
+    whatsapp_number: Optional[str] = None
+    emergency_number: Optional[str] = None
+    residential_address: Optional[str] = None
 
     class Config:
         from_attributes = True
+
 
 class PasswordChange(BaseModel):
     current_password: str
@@ -140,7 +200,6 @@ class PasswordChange(BaseModel):
         if not any(not char.isalnum() for char in value):
             raise ValueError("Password must contain at least one symbol")
         return value
-    
 
     @field_validator("confirm_password")
     def passwords_match(cls, value, values):
@@ -148,13 +207,16 @@ class PasswordChange(BaseModel):
             raise ValueError("Passwords do not match")
         return value
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+
 class PasswordResetRequestCreate(BaseModel):
     email: EmailStr
     reason: Optional[str] = None
+
 
 class PasswordResetRequestResponse(BaseModel):
     request_id: int
