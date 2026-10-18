@@ -29,31 +29,7 @@ Prepare a professional monthly performance review.
 
 Use exactly these sections:
 
-1. MCQ PERFORMANCE
-
-Display EVERY MCQ/category and its score exactly as provided.
-
-Do NOT:
-- recalculate the scores
-- change the scores
-- round the scores differently
-- combine categories
-- omit categories
-- infer scores from written feedback
-- invent categories or scores
-
-2. WRITTEN FEEDBACK SUMMARY
-
-Provide a descriptive summary of the written observer feedback.
-
-Identify:
-- the teacher's main strengths
-- areas requiring improvement
-- specific actionable improvements when supported by the observations
-
-Do not invent information that is not present in the observer feedback.
-
-3. OVERALL PERFORMANCE SUMMARY
+1. OVERALL PERFORMANCE SUMMARY
 
 Provide a concise professional conclusion based on the MCQ performance
 and written observer feedback.
